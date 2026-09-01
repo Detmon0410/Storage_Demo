@@ -1,3 +1,15 @@
 {
-    "prisma.pinToPrisma6": true
+    "prisma.pinToPrisma6": true,
+    "files.exclude": {
+        "**/node_modules": true
+    },
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/dist": true,
+        "**/pnpm-lock.yaml": true
+    },
+    "files.watcherExclude": {
+        "**/node_modules/**": true,
+        "**/dist/**": true
+    }
 }
