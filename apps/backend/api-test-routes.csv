@@ -1,0 +1,21 @@
+feature,method,endpoint,description,sample_body,expected_status
+Health,GET,http://localhost:4000/health,Server liveness check,,200
+Categories,GET,http://localhost:4000/api/categories,List all categories,,200
+Categories,GET,http://localhost:4000/api/categories/:id,Get one category by id,,200
+Categories,POST,http://localhost:4000/api/categories,Create a category,"{""categoryCode"":""CAT-TEST"",""categoryName"":""Test Category"",""description"":""for testing"",""isActive"":true}",201
+Categories,PUT,http://localhost:4000/api/categories/:id,Update a category,"{""categoryName"":""Updated Name""}",200
+Categories,DELETE,http://localhost:4000/api/categories/:id,Delete a category,,204
+Suppliers,GET,http://localhost:4000/api/suppliers,List all suppliers,,200
+Suppliers,GET,http://localhost:4000/api/suppliers/:id,Get one supplier by id,,200
+Suppliers,POST,http://localhost:4000/api/suppliers,Create a supplier,"{""supplierCode"":""SUP-TEST"",""supplierName"":""Test Supplier"",""contactName"":""Jane Doe"",""email"":""jane@example.com"",""phone"":""000-0000-0000"",""status"":""ACTIVE""}",201
+Suppliers,PUT,http://localhost:4000/api/suppliers/:id,Update a supplier,"{""status"":""INACTIVE""}",200
+Suppliers,DELETE,http://localhost:4000/api/suppliers/:id,Delete a supplier,,204
+Products,GET,http://localhost:4000/api/products,List all products (includes category and supplier),,200
+Products,GET,http://localhost:4000/api/products/:id,Get one product by id,,200
+Products,POST,http://localhost:4000/api/products,Create a product,"{""productCode"":""PRD-TEST"",""productName"":""Test Product"",""categoryId"":2,""supplierId"":1,""unit"":""PCS"",""stockQty"":10,""minStock"":2,""unitPrice"":1000,""currency"":""JPY"",""status"":""IN_STOCK"",""description"":""for testing""}",201
+Products,PUT,http://localhost:4000/api/products/:id,Update a product,"{""stockQty"":5}",200
+Products,DELETE,http://localhost:4000/api/products/:id,Delete a product,,204
+Stock Transactions,GET,http://localhost:4000/api/stock-transactions,List all stock transactions (includes product),,200
+Stock Transactions,GET,http://localhost:4000/api/stock-transactions/:id,Get one stock transaction by id,,200
+Stock Transactions,POST,http://localhost:4000/api/stock-transactions,"Create a stock transaction (also adjusts the linked product's stockQty: +qty for IN, -qty for OUT)","{""transactionNo"":""TX-TEST-001"",""productId"":1,""transactionType"":""IN"",""quantity"":5,""referenceNo"":""PO-TEST-001"",""note"":""test receiving""}",201
+Stock Transactions,DELETE,http://localhost:4000/api/stock-transactions/:id,"Delete a stock transaction (reverses its stockQty adjustment on the product)",,204

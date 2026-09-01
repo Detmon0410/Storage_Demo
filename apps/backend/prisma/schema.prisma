@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  categoryId   Int       @id @default(autoincrement()) @map("category_id")
+  categoryCode String    @unique @map("category_code")
+  categoryName String    @map("category_name")
+  description  String?
+  isActive     Boolean   @default(true) @map("is_active")
+  products     Product[]
+
+  @@map("categories")
+}
+
+model Supplier {
+  supplierId   Int       @id @default(autoincrement()) @map("supplier_id")
+  supplierCode String    @unique @map("supplier_code")
+  supplierName String    @map("supplier_name")
+  contactName  String?   @map("contact_name")
+  email        String?
+  phone        String?
+  status       String    @default("active")
+  products     Product[]
+
+  @@map("suppliers")
+}
+
+model Product {
+  productId   Int     @id @default(autoincrement()) @map("product_id")
+  productCode String  @unique @map("product_code")
+  productName String  @map("product_name")
+  categoryId  Int     @map("category_id")
+  supplierId  Int     @map("supplier_id")
+  unit        String
+  stockQty    Int     @default(0) @map("stock_qty")
+  minStock    Int     @default(0) @map("min_stock")
+  unitPrice   Decimal @map("unit_price") @db.Decimal(12, 2)
+  currency    String  @default("USD")
+  status      String  @default("active")
+  description String?
+
+  category          Category           @relation(fields: [categoryId], references: [categoryId])
+  supplier          Supplier           @relation(fields: [supplierId], references: [supplierId])
+  stockTransactions StockTransaction[]
+
+  @@map("products")
+}
+
+enum TransactionType {
+  IN
+  OUT
+  ADJUSTMENT
+}
+
+model StockTransaction {
+  transactionId   Int             @id @default(autoincrement()) @map("transaction_id")
+  transactionNo   String          @unique @map("transaction_no")
+  productId       Int             @map("product_id")
+  transactionType TransactionType @map("transaction_type")
+  quantity        Int
+  transactionDate DateTime        @default(now()) @map("transaction_date")
+  referenceNo     String?         @map("reference_no")
+  note            String?
+
+  product Product @relation(fields: [productId], references: [productId])
+
+  @@map("stock_transactions")
+}

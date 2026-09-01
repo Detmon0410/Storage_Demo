@@ -1,0 +1,9 @@
+{
+  "name": "storage-demo",
+  "private": true,
+  "scripts": {
+    "dev:fe": "pnpm --filter frontend dev",
+    "dev:be": "pnpm --filter backend dev",
+    "dev": "pnpm -r --parallel dev"
+  }
+}
