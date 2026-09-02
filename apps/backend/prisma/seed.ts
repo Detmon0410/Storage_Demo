@@ -1,4 +1,7 @@
 import { PrismaClient, TransactionType } from "@prisma/client";
+import { ImportOrderModel } from "../src/models/importOrder.model.js";
+import { SalesOrderModel } from "../src/models/salesOrder.model.js";
+import { StockTransactionModel } from "../src/models/stockTransaction.model.js";
 
 const prisma = new PrismaClient();
 
@@ -535,6 +538,46 @@ async function main() {
       },
     });
   }
+
+  // --- New-version demo: automatic stock transaction system ---------------------------
+  // Everything above is historical scene-setting inserted directly via Prisma. These three
+  // records instead go through the real model layer, so they demonstrate the app's current
+  // behavior: an import order automatically posts an IN transaction (referenceNo
+  // "IO:<orderNo>"), a sales order automatically posts an OUT transaction (referenceNo
+  // "SO:<orderNo>"), and a manual stocktake correction shows the individual/manual creation
+  // path. All three adjust product.stockQty as a side effect of being recorded.
+  await ImportOrderModel.create({
+    orderNo: "IMP-2026-0154",
+    supplierId: supplierIdByCode.get("SUP-RIVERSIDE")!,
+    country: "United States",
+    incoterms: "FOB",
+    orderDate: date("2026-08-28"),
+    etaDate: date("2026-09-02"),
+    status: "RECEIVED",
+    approver: "Kumiko Sato (Manager)",
+    customsEntryNo: "IDN-2026-003350",
+    items: [{ productId: productIdByCode.get("SKU-1012")!, quantity: 240, unitPrice: 820 }],
+  });
+
+  await SalesOrderModel.create({
+    orderNo: "SO-2026-3310",
+    customerId: customerIdByCode.get("CUS-0003")!,
+    deliveryStatus: "PENDING",
+    invoiceNo: "INV-2026-8810",
+    items: [
+      { productId: productIdByCode.get("SKU-1012")!, quantity: 36, unitPrice: 1250, discount: 5, lotBatch: "LOT-A2608-05" },
+      { productId: productIdByCode.get("SKU-1010")!, quantity: 8, unitPrice: 3200, discount: 5, lotBatch: "LOT-A2607-02" },
+    ],
+  });
+
+  await StockTransactionModel.create({
+    transactionNo: "TX-LIQUOR-011",
+    productId: productIdByCode.get("SKU-1005")!,
+    transactionType: TransactionType.ADJUSTMENT,
+    quantity: 6,
+    referenceNo: "STOCKTAKE-2026-09",
+    note: "Cycle count found 6 extra bottles misplaced on the Warehouse B overflow shelf",
+  });
 }
 
 main()
