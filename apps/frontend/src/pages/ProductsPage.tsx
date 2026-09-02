@@ -214,7 +214,7 @@ export function ProductsPage() {
       <PageHeader
         title={t("product.title")}
         subtitle={t("product.subtitle")}
-        actions={
+        filters={
           <>
             <SearchInput value={search} onChange={setSearch} placeholder={t("product.searchPlaceholder")} />
             <SelectField value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-auto">
@@ -225,10 +225,12 @@ export function ProductsPage() {
                 </option>
               ))}
             </SelectField>
-            <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
-              {t("product.add")}
-            </Button>
           </>
+        }
+        actions={
+          <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
+            {t("product.add")}
+          </Button>
         }
       />
 

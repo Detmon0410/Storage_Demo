@@ -149,7 +149,7 @@ export function StockTransactionsPage() {
       <PageHeader
         title={t("stockTransaction.title")}
         subtitle={t("stockTransaction.subtitle")}
-        actions={
+        filters={
           <>
             <SearchInput value={search} onChange={setSearch} placeholder={t("stockTransaction.searchPlaceholder")} />
             <SelectField value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="w-auto">
@@ -158,10 +158,12 @@ export function StockTransactionsPage() {
               <option value="OUT">{t("status.transaction.OUT")}</option>
               <option value="ADJUSTMENT">{t("status.transaction.ADJUSTMENT")}</option>
             </SelectField>
-            <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
-              {t("stockTransaction.add")}
-            </Button>
           </>
+        }
+        actions={
+          <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
+            {t("stockTransaction.add")}
+          </Button>
         }
       />
 

@@ -139,13 +139,11 @@ export function SuppliersPage() {
       <PageHeader
         title={t("supplier.title")}
         subtitle={t("supplier.subtitle")}
+        filters={<SearchInput value={search} onChange={setSearch} placeholder={t("supplier.searchPlaceholder")} />}
         actions={
-          <>
-            <SearchInput value={search} onChange={setSearch} placeholder={t("supplier.searchPlaceholder")} />
-            <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
-              {t("supplier.add")}
-            </Button>
-          </>
+          <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
+            {t("supplier.add")}
+          </Button>
         }
       />
 

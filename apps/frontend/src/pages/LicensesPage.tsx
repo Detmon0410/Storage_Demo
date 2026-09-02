@@ -184,7 +184,7 @@ export function LicensesPage() {
       <PageHeader
         title={t("license.title")}
         subtitle={t("license.subtitle")}
-        actions={
+        filters={
           <>
             <SearchInput value={search} onChange={setSearch} placeholder={t("license.searchPlaceholder")} />
             <SelectField value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="w-auto">
@@ -195,10 +195,12 @@ export function LicensesPage() {
                 </option>
               ))}
             </SelectField>
-            <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
-              {t("license.add")}
-            </Button>
           </>
+        }
+        actions={
+          <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
+            {t("license.add")}
+          </Button>
         }
       />
 

@@ -207,7 +207,7 @@ export function CustomersPage() {
       <PageHeader
         title={t("customer.title")}
         subtitle={t("customer.subtitle")}
-        actions={
+        filters={
           <>
             <SearchInput value={search} onChange={setSearch} placeholder={t("customer.searchPlaceholder")} />
             <SelectField value={channelFilter} onChange={(e) => setChannelFilter(e.target.value)} className="w-auto">
@@ -218,10 +218,12 @@ export function CustomersPage() {
                 </option>
               ))}
             </SelectField>
-            <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
-              {t("customer.add")}
-            </Button>
           </>
+        }
+        actions={
+          <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
+            {t("customer.add")}
+          </Button>
         }
       />
 

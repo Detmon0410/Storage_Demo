@@ -259,7 +259,7 @@ export function SalesOrdersPage() {
       <PageHeader
         title={t("salesOrder.title")}
         subtitle={t("salesOrder.subtitle")}
-        actions={
+        filters={
           <>
             <SearchInput value={search} onChange={setSearch} placeholder={t("salesOrder.searchPlaceholder")} />
             <SelectField value={deliveryFilter} onChange={(e) => setDeliveryFilter(e.target.value)} className="w-auto">
@@ -270,10 +270,12 @@ export function SalesOrdersPage() {
                 </option>
               ))}
             </SelectField>
-            <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
-              {t("salesOrder.add")}
-            </Button>
           </>
+        }
+        actions={
+          <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
+            {t("salesOrder.add")}
+          </Button>
         }
       />
 

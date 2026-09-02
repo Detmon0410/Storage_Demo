@@ -232,7 +232,7 @@ export function ImportOrdersPage() {
       <PageHeader
         title={t("importOrder.title")}
         subtitle={t("importOrder.subtitle")}
-        actions={
+        filters={
           <>
             <SearchInput value={search} onChange={setSearch} placeholder={t("importOrder.searchPlaceholder")} />
             <SelectField value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-auto">
@@ -243,10 +243,12 @@ export function ImportOrdersPage() {
                 </option>
               ))}
             </SelectField>
-            <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
-              {t("importOrder.add")}
-            </Button>
           </>
+        }
+        actions={
+          <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
+            {t("importOrder.add")}
+          </Button>
         }
       />
 

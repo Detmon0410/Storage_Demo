@@ -115,13 +115,11 @@ export function CategoriesPage() {
       <PageHeader
         title={t("category.title")}
         subtitle={t("category.subtitle")}
+        filters={<SearchInput value={search} onChange={setSearch} placeholder={t("category.searchPlaceholder")} />}
         actions={
-          <>
-            <SearchInput value={search} onChange={setSearch} placeholder={t("category.searchPlaceholder")} />
-            <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
-              {t("category.add")}
-            </Button>
-          </>
+          <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
+            {t("category.add")}
+          </Button>
         }
       />
 

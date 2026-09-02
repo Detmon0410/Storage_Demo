@@ -195,13 +195,11 @@ export function InventoryStockPage() {
       <PageHeader
         title={t("inventoryStock.title")}
         subtitle={t("inventoryStock.subtitle", { total: formatNumber(totalOnHand), aging: agingCount })}
+        filters={<SearchInput value={search} onChange={setSearch} placeholder={t("inventoryStock.searchPlaceholder")} />}
         actions={
-          <>
-            <SearchInput value={search} onChange={setSearch} placeholder={t("inventoryStock.searchPlaceholder")} />
-            <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
-              {t("inventoryStock.add")}
-            </Button>
-          </>
+          <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
+            {t("inventoryStock.add")}
+          </Button>
         }
       />
 
