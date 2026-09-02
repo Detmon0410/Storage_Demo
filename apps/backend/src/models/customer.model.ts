@@ -4,21 +4,19 @@ export const CustomerModel = {
   findAll: () =>
     prisma.customer.findMany({
       orderBy: { customerId: "asc" },
-      include: { license: true },
+      include: { licenses: true },
     }),
 
   findById: (customerId: number) =>
     prisma.customer.findUnique({
       where: { customerId },
-      include: { license: true },
+      include: { licenses: true },
     }),
 
   create: (data: {
     customerCode: string;
     customerName: string;
     channelType: string;
-    licenseNo?: string | null;
-    licenseExpiryDate?: Date | null;
     creditLimit: number;
     currentBalance: number;
     availableCredit: number;
@@ -32,8 +30,6 @@ export const CustomerModel = {
       customerCode: string;
       customerName: string;
       channelType: string;
-      licenseNo: string | null;
-      licenseExpiryDate: Date | null;
       creditLimit: number;
       currentBalance: number;
       availableCredit: number;

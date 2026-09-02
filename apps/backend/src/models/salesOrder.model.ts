@@ -1,11 +1,13 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../middleware/errorHandler.js";
+import { isLicenseValid } from "./customerLicense.model.js";
 import { createStockTransactionTx, reverseAndDeleteByReferenceTx } from "./stockTransaction.model.js";
 import { salesOrderStockReference } from "../utils/stockReference.js";
 
 const withRelations = {
   customer: true,
+  customerLicense: true,
   items: { include: { product: true } },
 } as const;
 
@@ -41,6 +43,19 @@ const createStockOutTx = async (tx: Prisma.TransactionClient, orderNo: string, i
   }
 };
 
+const validateAndSnapshotLicense = async (tx: Prisma.TransactionClient, customerId: number, customerLicenseId: number) => {
+  const license = await tx.customerLicense.findUnique({ where: { customerLicenseId } });
+  if (!license) throw new HttpError(400, "Selected customer license not found");
+  if (license.customerId !== customerId) throw new HttpError(400, "Selected license does not belong to this customer");
+  if (!isLicenseValid(license)) throw new HttpError(400, "Selected license is not active or has expired");
+  return {
+    customerLicenseId: license.customerLicenseId,
+    licenseNumberSnapshot: license.licenseNumber,
+    licenseTypeSnapshot: license.licenseType,
+    licenseExpirySnapshot: license.expiryDate,
+  };
+};
+
 export const SalesOrderModel = {
   findAll: () =>
     prisma.salesOrder.findMany({
@@ -57,6 +72,7 @@ export const SalesOrderModel = {
   create: (data: {
     orderNo: string;
     customerId: number;
+    customerLicenseId: number;
     deliveryStatus: string;
     invoiceNo: string;
     approver?: string;
@@ -64,6 +80,8 @@ export const SalesOrderModel = {
   }) => {
     const rows = toItemRows(data.items);
     return prisma.$transaction(async (tx) => {
+      const licenseFields = await validateAndSnapshotLicense(tx, data.customerId, data.customerLicenseId);
+
       const order = await tx.salesOrder.create({
         data: {
           orderNo: data.orderNo,
@@ -73,6 +91,7 @@ export const SalesOrderModel = {
           approver: data.approver,
           netValue: rows.reduce((sum, row) => sum + row.netValue, 0),
           items: { create: rows },
+          ...licenseFields,
         },
         include: withRelations,
       });
@@ -86,29 +105,47 @@ export const SalesOrderModel = {
     data: Partial<{
       orderNo: string;
       customerId: number;
+      customerLicenseId: number;
       deliveryStatus: string;
       invoiceNo: string;
       approver: string;
       items: SalesOrderItemInput[];
     }>,
   ) => {
-    const { items, ...orderFields } = data;
+    const { items, customerLicenseId, ...orderFields } = data;
+
     if (!items) {
-      return prisma.salesOrder.update({ where: { salesOrderId }, data: orderFields, include: withRelations });
+      return prisma.$transaction(async (tx) => {
+        let licenseFields = {};
+        if (customerLicenseId != null) {
+          const existing = await tx.salesOrder.findUnique({ where: { salesOrderId }, select: { customerId: true } });
+          if (!existing) throw new HttpError(404, "Sales order not found");
+          const customerId = data.customerId ?? existing.customerId;
+          licenseFields = await validateAndSnapshotLicense(tx, customerId, customerLicenseId);
+        }
+        return tx.salesOrder.update({ where: { salesOrderId }, data: { ...orderFields, ...licenseFields }, include: withRelations });
+      });
     }
 
     const rows = toItemRows(items);
     return prisma.$transaction(async (tx) => {
-      const existing = await tx.salesOrder.findUnique({ where: { salesOrderId }, select: { orderNo: true } });
+      const existing = await tx.salesOrder.findUnique({ where: { salesOrderId }, select: { orderNo: true, customerId: true } });
       if (!existing) throw new HttpError(404, "Sales order not found");
 
       await reverseAndDeleteByReferenceTx(tx, salesOrderStockReference(existing.orderNo));
       await tx.salesOrderItem.deleteMany({ where: { salesOrderId } });
 
+      let licenseFields = {};
+      if (customerLicenseId != null) {
+        const customerId = data.customerId ?? existing.customerId;
+        licenseFields = await validateAndSnapshotLicense(tx, customerId, customerLicenseId);
+      }
+
       const updated = await tx.salesOrder.update({
         where: { salesOrderId },
         data: {
           ...orderFields,
+          ...licenseFields,
           netValue: rows.reduce((sum, row) => sum + row.netValue, 0),
           items: { create: rows },
         },

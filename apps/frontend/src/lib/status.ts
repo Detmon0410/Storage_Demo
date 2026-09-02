@@ -33,6 +33,8 @@ const TONE_BY_CODE: Record<string, Tone> = {
   // supplier.status
   ACTIVE: "success",
   INACTIVE: "neutral",
+  // customerLicense.status
+  REVOKED: "danger",
 };
 
 export function statusTone(code: string | null | undefined): Tone {

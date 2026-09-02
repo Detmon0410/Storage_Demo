@@ -97,14 +97,35 @@ export interface Customer {
   customerCode: string;
   customerName: string;
   channelType: string;
-  licenseNo: string | null;
-  licenseExpiryDate: string | null;
   creditLimit: string;
   currentBalance: string;
   availableCredit: string;
   standardDiscount: string;
   creditStatus: string;
-  license?: License | null;
+  licenses?: CustomerLicense[];
+}
+
+export type CustomerLicenseStatus = "ACTIVE" | "EXPIRED" | "REVOKED" | "SUSPENDED" | "PENDING";
+
+export interface CustomerLicense {
+  customerLicenseId: number;
+  customerId: number;
+  licenseNumber: string;
+  licenseType: string;
+  applicableChannel: string | null;
+  issueDate: string;
+  expiryDate: string;
+  status: CustomerLicenseStatus;
+  documentUrl: string | null;
+  notes: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  updatedBy: string | null;
+  updatedAt: string;
+  statusChangedBy: string | null;
+  statusChangedAt: string | null;
+  renewedFromId: number | null;
+  customer?: Customer;
 }
 
 export interface SalesOrderItem {
@@ -127,7 +148,12 @@ export interface SalesOrder {
   deliveryStatus: string;
   invoiceNo: string;
   approver: string | null;
+  customerLicenseId: number | null;
+  licenseNumberSnapshot: string | null;
+  licenseTypeSnapshot: string | null;
+  licenseExpirySnapshot: string | null;
   customer?: Customer;
+  customerLicense?: CustomerLicense | null;
   items?: SalesOrderItem[];
 }
 

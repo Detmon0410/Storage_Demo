@@ -1,8 +1,8 @@
 import { AlertTriangle, CheckCircle2, Package, Pencil, Plus, ShieldAlert, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { customerApi, inventoryStockApi, productApi, salesOrderApi } from "../api/resources";
-import type { SalesOrder } from "../api/types";
+import { customerApi, customerLicenseApi, inventoryStockApi, productApi, salesOrderApi } from "../api/resources";
+import type { Customer, CustomerLicense, SalesOrder } from "../api/types";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
@@ -15,7 +15,8 @@ import { EmptyState, ErrorState, LoadingState } from "../components/ui/States";
 import { useToast } from "../components/ui/Toast";
 import { useList } from "../hooks/useList";
 import { useResource } from "../hooks/useResource";
-import { formatCurrency } from "../lib/format";
+import { isCustomerLicenseValid } from "./customers/CustomerLicensesPanel";
+import { formatCurrency, formatDate } from "../lib/format";
 import { statusTone } from "../lib/status";
 
 type ItemRow = { productId: string; quantity: string; unitPrice: string; discount: string; lotBatch: string };
@@ -23,6 +24,7 @@ type ItemRow = { productId: string; quantity: string; unitPrice: string; discoun
 type FormState = {
   orderNo: string;
   customerId: string;
+  customerLicenseId: string;
   deliveryStatus: string;
   invoiceNo: string;
   approver: string;
@@ -32,6 +34,7 @@ type FormState = {
 const emptyForm: FormState = {
   orderNo: "",
   customerId: "",
+  customerLicenseId: "",
   deliveryStatus: "PENDING",
   invoiceNo: "",
   approver: "",
@@ -46,6 +49,7 @@ export function SalesOrdersPage() {
   const { t } = useTranslation();
   const { rows, loading, error, saving, reload, create, update, remove } = useResource(salesOrderApi, (r) => r.salesOrderId);
   const customers = useList(() => customerApi.list());
+  const customerLicenses = useList(() => customerLicenseApi.list());
   const products = useList(() => productApi.list());
   const inventoryLots = useList(() => inventoryStockApi.list());
   const toast = useToast();
@@ -70,6 +74,22 @@ export function SalesOrdersPage() {
 
   const sellableProducts = useMemo(() => products.filter((p) => p.status === "READY"), [products]);
   const selectedCustomer = customers.find((c) => String(c.customerId) === form.customerId);
+
+  const validLicensesFor = (customerId: string, customer: Customer | undefined): CustomerLicense[] =>
+    customer
+      ? customerLicenses.filter(
+          (l) =>
+            String(l.customerId) === customerId &&
+            isCustomerLicenseValid(l) &&
+            (!l.applicableChannel || l.applicableChannel === customer.channelType),
+        )
+      : [];
+
+  const validLicensesForCustomer = useMemo(
+    () => validLicensesFor(form.customerId, selectedCustomer),
+    [customerLicenses, form.customerId, selectedCustomer],
+  );
+  const selectedLicense = customerLicenses.find((l) => String(l.customerLicenseId) === form.customerLicenseId);
 
   const lotsForProduct = (productId: string) => inventoryLots.filter((l) => String(l.productId) === productId && l.quantityOnHand > 0);
 
@@ -101,9 +121,10 @@ export function SalesOrdersPage() {
     }
 
     if (selectedCustomer) {
-      const hasValidLicense = !!selectedCustomer.licenseNo && !!selectedCustomer.license && selectedCustomer.license.daysRemaining >= 0;
-      if (!hasValidLicense) {
-        warnings.push(t("salesOrder.validation.noLicense"));
+      if (validLicensesForCustomer.length === 0) {
+        blockers.push(t("salesOrder.validation.noLicense"));
+      } else if (!form.customerLicenseId) {
+        blockers.push(t("salesOrder.validation.licenseRequired"));
       }
       const overDiscountItems = form.items.filter((item) => Number(item.discount || 0) > Number(selectedCustomer.standardDiscount));
       if (overDiscountItems.length > 0) {
@@ -122,7 +143,7 @@ export function SalesOrdersPage() {
 
     const needsApproval = warnings.length > 0 && !form.approver.trim();
     return { blockers, warnings, needsApproval };
-  }, [quantityByProduct, products, selectedCustomer, form.items, form.approver, orderTotal, t]);
+  }, [quantityByProduct, products, selectedCustomer, validLicensesForCustomer, form.customerLicenseId, form.items, form.approver, orderTotal, t]);
 
   const canSubmit = validation.blockers.length === 0 && !validation.needsApproval;
 
@@ -135,6 +156,7 @@ export function SalesOrdersPage() {
     setForm({
       orderNo: row.orderNo,
       customerId: String(row.customerId),
+      customerLicenseId: row.customerLicenseId != null ? String(row.customerLicenseId) : "",
       deliveryStatus: row.deliveryStatus,
       invoiceNo: row.invoiceNo,
       approver: row.approver ?? "",
@@ -173,6 +195,7 @@ export function SalesOrdersPage() {
       const payload = {
         orderNo: form.orderNo,
         customerId: Number(form.customerId),
+        customerLicenseId: Number(form.customerLicenseId),
         deliveryStatus: form.deliveryStatus,
         invoiceNo: form.invoiceNo,
         approver: form.approver || undefined,
@@ -320,7 +343,15 @@ export function SalesOrdersPage() {
                 <TextInput value={form.invoiceNo} onChange={(e) => setForm({ ...form, invoiceNo: e.target.value })} placeholder={t("salesOrder.field.invoiceNoPlaceholder")} />
               </Field>
               <Field label={t("salesOrder.field.customer")} required colSpan={2}>
-                <SelectField value={form.customerId} onChange={(e) => setForm({ ...form, customerId: e.target.value })}>
+                <SelectField
+                  value={form.customerId}
+                  onChange={(e) => {
+                    const customerId = e.target.value;
+                    const customer = customers.find((c) => String(c.customerId) === customerId);
+                    const valid = validLicensesFor(customerId, customer);
+                    setForm({ ...form, customerId, customerLicenseId: valid.length === 1 ? String(valid[0].customerLicenseId) : "" });
+                  }}
+                >
                   <option value="">{t("salesOrder.field.customerPlaceholder")}</option>
                   {customers.map((c) => (
                     <option key={c.customerId} value={c.customerId}>
@@ -329,6 +360,48 @@ export function SalesOrdersPage() {
                   ))}
                 </SelectField>
               </Field>
+              <Field
+                label={t("salesOrder.field.license")}
+                required
+                colSpan={2}
+                helperText={
+                  form.customerId && validLicensesForCustomer.length === 0
+                    ? t("salesOrder.field.licenseHelpNone")
+                    : t("salesOrder.field.licenseHelp")
+                }
+              >
+                <SelectField
+                  value={form.customerLicenseId}
+                  onChange={(e) => setForm({ ...form, customerLicenseId: e.target.value })}
+                  disabled={!form.customerId || validLicensesForCustomer.length === 0}
+                >
+                  <option value="">
+                    {!form.customerId
+                      ? t("salesOrder.field.licensePlaceholder")
+                      : validLicensesForCustomer.length === 0
+                        ? t("salesOrder.field.licenseNone")
+                        : t("salesOrder.field.licenseSelectPlaceholder")}
+                  </option>
+                  {validLicensesForCustomer.map((l) => (
+                    <option key={l.customerLicenseId} value={l.customerLicenseId}>
+                      {l.licenseNumber} — {l.licenseType}
+                    </option>
+                  ))}
+                </SelectField>
+              </Field>
+              {selectedLicense && (
+                <div className="sm:col-span-2 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                  <span>
+                    {t("customerLicense.field.type")}: <strong>{selectedLicense.licenseType}</strong>
+                  </span>
+                  <span>
+                    {t("salesOrder.field.licenseValidUntil")}: <strong>{formatDate(selectedLicense.expiryDate)}</strong>
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> {t("salesOrder.field.licenseValid")}
+                  </span>
+                </div>
+              )}
               <Field label={t("salesOrder.field.deliveryStatus")}>
                 <SelectField value={form.deliveryStatus} onChange={(e) => setForm({ ...form, deliveryStatus: e.target.value })}>
                   {DELIVERY_OPTIONS.map((s) => (

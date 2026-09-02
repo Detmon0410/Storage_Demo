@@ -32,14 +32,18 @@ export const getSalesOrder = asyncHandler(async (req, res) => {
 });
 
 export const createSalesOrder = asyncHandler(async (req, res) => {
-  const { orderNo, customerId, deliveryStatus, invoiceNo, approver, items } = req.body;
+  const { orderNo, customerId, customerLicenseId, deliveryStatus, invoiceNo, approver, items } = req.body;
   if (!orderNo || !customerId || !deliveryStatus || !invoiceNo) {
     throw new HttpError(400, "orderNo, customerId, deliveryStatus, and invoiceNo are required");
+  }
+  if (!customerLicenseId) {
+    throw new HttpError(400, "A valid customer license must be selected");
   }
   res.status(201).json(
     await SalesOrderModel.create({
       orderNo,
       customerId: Number(customerId),
+      customerLicenseId: Number(customerLicenseId),
       deliveryStatus,
       invoiceNo,
       approver,
@@ -49,11 +53,12 @@ export const createSalesOrder = asyncHandler(async (req, res) => {
 });
 
 export const updateSalesOrder = asyncHandler(async (req, res) => {
-  const { orderNo, customerId, deliveryStatus, invoiceNo, approver, items } = req.body;
+  const { orderNo, customerId, customerLicenseId, deliveryStatus, invoiceNo, approver, items } = req.body;
   res.json(
     await SalesOrderModel.update(Number(req.params.id), {
       orderNo,
       customerId: customerId == null ? undefined : Number(customerId),
+      customerLicenseId: customerLicenseId == null ? undefined : Number(customerLicenseId),
       deliveryStatus,
       invoiceNo,
       approver,

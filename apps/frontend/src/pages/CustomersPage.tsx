@@ -1,7 +1,7 @@
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { customerApi, licenseApi } from "../api/resources";
+import { customerApi, customerLicenseApi } from "../api/resources";
 import type { Customer } from "../api/types";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -13,8 +13,8 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { SearchInput } from "../components/ui/SearchInput";
 import { EmptyState, ErrorState, LoadingState } from "../components/ui/States";
 import { useToast } from "../components/ui/Toast";
-import { useList } from "../hooks/useList";
 import { useResource } from "../hooks/useResource";
+import { CustomerLicensesPanel, isCustomerLicenseValid } from "./customers/CustomerLicensesPanel";
 import { formatCurrency } from "../lib/format";
 import { statusTone } from "../lib/status";
 
@@ -22,8 +22,6 @@ type FormState = {
   customerCode: string;
   customerName: string;
   channelType: string;
-  licenseNo: string;
-  licenseExpiryDate: string;
   creditLimit: string;
   currentBalance: string;
   availableCredit: string;
@@ -35,8 +33,6 @@ const emptyForm: FormState = {
   customerCode: "",
   customerName: "",
   channelType: "DISTRIBUTOR",
-  licenseNo: "",
-  licenseExpiryDate: "",
   creditLimit: "",
   currentBalance: "0",
   availableCredit: "",
@@ -50,14 +46,30 @@ const CREDIT_STATUS_OPTIONS = ["NORMAL", "NEAR_LIMIT", "OVER_LIMIT", "NO_LICENSE
 export function CustomersPage() {
   const { t } = useTranslation();
   const { rows, loading, error, saving, reload, create, update, remove } = useResource(customerApi, (r) => r.customerId);
-  const licenses = useList(() => licenseApi.list());
-  const sellLicenses = useMemo(() => licenses.filter((l) => l.category === "SALES"), [licenses]);
+  const {
+    rows: customerLicenses,
+    saving: licenseSaving,
+    reload: reloadLicenses,
+    create: createLicense,
+    update: updateLicense,
+  } = useResource(customerLicenseApi, (r) => r.customerLicenseId);
   const toast = useToast();
   const [search, setSearch] = useState("");
   const [channelFilter, setChannelFilter] = useState("");
   const [editing, setEditing] = useState<Customer | null | undefined>(undefined);
   const [deleting, setDeleting] = useState<Customer | null>(null);
+  const [managingLicenses, setManagingLicenses] = useState<Customer | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
+
+  const licensesByCustomerId = useMemo(() => {
+    const map = new Map<number, typeof customerLicenses>();
+    for (const license of customerLicenses) {
+      const list = map.get(license.customerId);
+      if (list) list.push(license);
+      else map.set(license.customerId, [license]);
+    }
+    return map;
+  }, [customerLicenses]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -78,8 +90,6 @@ export function CustomersPage() {
       customerCode: row.customerCode,
       customerName: row.customerName,
       channelType: row.channelType,
-      licenseNo: row.licenseNo ?? "",
-      licenseExpiryDate: row.licenseExpiryDate ? row.licenseExpiryDate.slice(0, 10) : "",
       creditLimit: row.creditLimit,
       currentBalance: row.currentBalance,
       availableCredit: row.availableCredit,
@@ -111,8 +121,6 @@ export function CustomersPage() {
         customerCode: form.customerCode,
         customerName: form.customerName,
         channelType: form.channelType,
-        licenseNo: form.licenseNo || null,
-        licenseExpiryDate: form.licenseExpiryDate || null,
         creditLimit: Number(form.creditLimit),
         currentBalance: Number(form.currentBalance || 0),
         availableCredit: Number(form.availableCredit || 0),
@@ -158,7 +166,19 @@ export function CustomersPage() {
     {
       key: "license",
       header: t("customer.col.license"),
-      render: (r) => (r.licenseNo ? <span className="text-xs">{r.licenseNo}</span> : <Badge tone="danger">{t("customer.noLicense")}</Badge>),
+      render: (r) => {
+        const licenses = licensesByCustomerId.get(r.customerId) ?? [];
+        const hasValid = licenses.some((l) => isCustomerLicenseValid(l));
+        return (
+          <button type="button" onClick={() => setManagingLicenses(r)} className="rounded-full transition-opacity hover:opacity-75">
+            {licenses.length === 0 ? (
+              <Badge tone="danger">{t("customer.noLicense")}</Badge>
+            ) : (
+              <Badge tone={hasValid ? "info" : "danger"}>{t("customerLicense.count", { count: licenses.length })}</Badge>
+            )}
+          </button>
+        );
+      },
     },
     {
       key: "credit",
@@ -195,6 +215,7 @@ export function CustomersPage() {
       className: "text-right",
       render: (r) => (
         <div className="flex justify-end gap-1">
+          <Button variant="ghost" size="sm" onClick={() => setManagingLicenses(r)} icon={<Eye className="h-3.5 w-3.5" />} />
           <Button variant="ghost" size="sm" onClick={() => openEdit(r)} icon={<Pencil className="h-3.5 w-3.5" />} />
           <Button variant="ghost" size="sm" onClick={() => setDeleting(r)} icon={<Trash2 className="h-3.5 w-3.5 text-rose-500" />} />
         </div>
@@ -277,26 +298,6 @@ export function CustomersPage() {
             <Field label={t("customer.field.standardDiscount")}>
               <TextInput type="number" min="0" max="100" value={form.standardDiscount} onChange={(e) => setForm({ ...form, standardDiscount: e.target.value })} />
             </Field>
-            <Field label={t("customer.field.license")} helperText={t("customer.field.licenseHelp")}>
-              <SelectField
-                value={form.licenseNo}
-                onChange={(e) => {
-                  const licenseNo = e.target.value;
-                  const lic = sellLicenses.find((l) => l.licenseNo === licenseNo);
-                  setForm({ ...form, licenseNo, licenseExpiryDate: lic ? lic.expiryDate.slice(0, 10) : form.licenseExpiryDate });
-                }}
-              >
-                <option value="">{t("customer.field.licenseNone")}</option>
-                {sellLicenses.map((l) => (
-                  <option key={l.licenseId} value={l.licenseNo}>
-                    {l.licenseNo} ({l.holderName})
-                  </option>
-                ))}
-              </SelectField>
-            </Field>
-            <Field label={t("customer.field.licenseExpiry")}>
-              <TextInput type="date" value={form.licenseExpiryDate} onChange={(e) => setForm({ ...form, licenseExpiryDate: e.target.value })} />
-            </Field>
             <Field label={t("customer.field.creditLimit")} required>
               <TextInput
                 type="number"
@@ -336,6 +337,18 @@ export function CustomersPage() {
           loading={saving}
           onCancel={() => setDeleting(null)}
           onConfirm={handleDelete}
+        />
+      )}
+
+      {managingLicenses && (
+        <CustomerLicensesPanel
+          customer={managingLicenses}
+          licenses={licensesByCustomerId.get(managingLicenses.customerId) ?? []}
+          saving={licenseSaving}
+          onClose={() => setManagingLicenses(null)}
+          onCreate={createLicense}
+          onUpdate={updateLicense}
+          onRenewed={reloadLicenses}
         />
       )}
     </div>

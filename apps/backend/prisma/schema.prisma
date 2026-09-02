@@ -128,25 +128,58 @@ model License {
   daysRemaining Int      @map("days_remaining")
   status        String
 
-  customers Customer[]
-
   @@map("licenses")
 }
 
-model Customer {
-  customerId        Int       @id @default(autoincrement()) @map("customer_id")
-  customerCode      String    @unique @map("customer_code")
-  customerName      String    @map("customer_name")
-  channelType       String    @map("channel_type")
-  licenseNo         String?   @map("license_no")
-  licenseExpiryDate DateTime? @map("license_expiry_date") @db.Date
-  creditLimit       Decimal   @map("credit_limit") @db.Decimal(14, 2)
-  currentBalance    Decimal   @map("current_balance") @db.Decimal(14, 2)
-  availableCredit   Decimal   @map("available_credit") @db.Decimal(14, 2)
-  standardDiscount  Decimal   @map("standard_discount") @db.Decimal(5, 2)
-  creditStatus      String    @map("credit_status")
+enum CustomerLicenseStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+  SUSPENDED
+  PENDING
+}
 
-  license     License?     @relation(fields: [licenseNo], references: [licenseNo])
+model CustomerLicense {
+  customerLicenseId Int                   @id @default(autoincrement()) @map("customer_license_id")
+  customerId        Int                   @map("customer_id")
+  licenseNumber     String                @unique @map("license_number")
+  licenseType       String                @map("license_type")
+  applicableChannel String?               @map("applicable_channel")
+  issueDate         DateTime              @map("issue_date") @db.Date
+  expiryDate        DateTime              @map("expiry_date") @db.Date
+  status            CustomerLicenseStatus @default(PENDING)
+  documentUrl       String?               @map("document_url")
+  notes             String?
+
+  createdBy       String?   @map("created_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedBy       String?   @map("updated_by")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  statusChangedBy String?   @map("status_changed_by")
+  statusChangedAt DateTime? @map("status_changed_at")
+
+  renewedFromId Int?             @unique @map("renewed_from_id")
+  renewedFrom   CustomerLicense? @relation("LicenseRenewal", fields: [renewedFromId], references: [customerLicenseId], onDelete: Restrict)
+  renewedTo     CustomerLicense? @relation("LicenseRenewal")
+
+  customer    Customer     @relation(fields: [customerId], references: [customerId])
+  salesOrders SalesOrder[]
+
+  @@map("customer_licenses")
+}
+
+model Customer {
+  customerId       Int     @id @default(autoincrement()) @map("customer_id")
+  customerCode     String  @unique @map("customer_code")
+  customerName     String  @map("customer_name")
+  channelType      String  @map("channel_type")
+  creditLimit      Decimal @map("credit_limit") @db.Decimal(14, 2)
+  currentBalance   Decimal @map("current_balance") @db.Decimal(14, 2)
+  availableCredit  Decimal @map("available_credit") @db.Decimal(14, 2)
+  standardDiscount Decimal @map("standard_discount") @db.Decimal(5, 2)
+  creditStatus     String  @map("credit_status")
+
+  licenses    CustomerLicense[]
   salesOrders SalesOrder[]
 
   @@map("customers")
@@ -161,8 +194,14 @@ model SalesOrder {
   invoiceNo      String  @map("invoice_no")
   approver       String?
 
-  customer Customer         @relation(fields: [customerId], references: [customerId])
-  items    SalesOrderItem[]
+  customerLicenseId     Int?      @map("customer_license_id")
+  licenseNumberSnapshot String?   @map("license_number_snapshot")
+  licenseTypeSnapshot   String?   @map("license_type_snapshot")
+  licenseExpirySnapshot DateTime? @map("license_expiry_snapshot") @db.Date
+
+  customer        Customer         @relation(fields: [customerId], references: [customerId])
+  customerLicense CustomerLicense? @relation(fields: [customerLicenseId], references: [customerLicenseId], onDelete: Restrict)
+  items           SalesOrderItem[]
 
   @@map("sales_orders")
 }

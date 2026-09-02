@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { categoryRoutes } from "./category.routes.js";
 import { customerRoutes } from "./customer.routes.js";
+import { customerLicenseRoutes } from "./customerLicense.routes.js";
 import { dashboardKpiRoutes } from "./dashboardKpi.routes.js";
 import { importOrderRoutes } from "./importOrder.routes.js";
 import { inventoryStockRoutes } from "./inventoryStock.routes.js";
@@ -19,6 +20,7 @@ apiRoutes.use("/stock-transactions", stockTransactionRoutes);
 apiRoutes.use("/import-orders", importOrderRoutes);
 apiRoutes.use("/licenses", licenseRoutes);
 apiRoutes.use("/customers", customerRoutes);
+apiRoutes.use("/customer-licenses", customerLicenseRoutes);
 apiRoutes.use("/sales-orders", salesOrderRoutes);
 apiRoutes.use("/inventory-stocks", inventoryStockRoutes);
 apiRoutes.use("/dashboard-kpis", dashboardKpiRoutes);

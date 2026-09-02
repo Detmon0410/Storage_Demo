@@ -22,6 +22,9 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
     if (err.code === "P2002") {
       return res.status(409).json({ error: "A record with this value already exists" });
     }
+    if (err.code === "P2003") {
+      return res.status(409).json({ error: "This record is referenced by other data and cannot be modified" });
+    }
   }
 
   console.error(err);

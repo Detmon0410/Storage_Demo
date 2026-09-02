@@ -1,4 +1,5 @@
-import { PrismaClient, TransactionType } from "@prisma/client";
+import { CustomerLicenseStatus, PrismaClient, TransactionType } from "@prisma/client";
+import { CustomerLicenseModel } from "../src/models/customerLicense.model.js";
 import { ImportOrderModel } from "../src/models/importOrder.model.js";
 import { SalesOrderModel } from "../src/models/salesOrder.model.js";
 import { StockTransactionModel } from "../src/models/stockTransaction.model.js";
@@ -226,30 +227,144 @@ const importOrders = [
   },
 ] as const;
 
-// Two license categories: IMPORT (our own wholesale license, held by the operating
-// company) and SALES (each customer's own retail/wholesale liquor license under Japan's
-// Liquor Tax Act licensing regime). daysRemaining/status drive the 30-day expiry alerts.
+// The generic License table is now IMPORT-only — the company's own wholesale licenses.
+// Each customer's liquor sales license lives in the dedicated CustomerLicense table below
+// (see `customerLicenses`), managed separately from the Customer master record.
 const licenses = [
   ["LIC-IMP-0011", "Liquor Wholesale Business License", "Tokyo Liquor Import Co., Ltd.", "IMPORT", "2025-01-10", "2026-01-09", -235, "EXPIRED"],
-  ["LIC-IMP-0012", "Liquor Wholesale Business License (Category 2)", "Tokyo Liquor Import Co., Ltd.", "IMPORT", "2025-09-01", "2026-08-31", -1, "EXPIRED"],
-  ["LIC-SELL-2201", "Liquor Wholesale Business License", "Tokyo Shuhan Trading Co., Ltd.", "SALES", "2025-03-01", "2026-09-20", 19, "EXPIRING_SOON"],
-  ["LIC-SELL-2202", "Liquor Retail Business License", "Shiawase Supermarket", "SALES", "2024-10-15", "2026-09-15", 14, "EXPIRING_SOON"],
-  ["LIC-SELL-2203", "Liquor Retail Business License (Restaurant/Bar)", "Sumida River Riverside Bar", "SALES", "2025-05-01", "2026-11-30", 90, "NORMAL"],
-  ["LIC-SELL-2204", "Liquor Retail Business License", "24-Hour Minimart Nakano", "SALES", "2024-08-01", "2025-07-31", -397, "EXPIRED"],
-  ["LIC-SELL-2205", "Liquor Wholesale Business License", "Hokkaido Liquor Distribution Co., Ltd.", "SALES", "2025-06-01", "2027-05-31", 272, "NORMAL"],
-  ["LIC-SELL-2206", "Liquor Retail Business License (Restaurant/Bar)", "Obaachan's Kitchen Restaurant", "SALES", "2025-01-20", "2026-09-05", 4, "EXPIRING_SOON"],
+  ["LIC-IMP-0012", "Liquor Wholesale Business License (Category 2)", "Tokyo Liquor Import Co., Ltd.", "IMPORT", "2025-09-01", "2026-08-31", -2, "EXPIRED"],
+  ["LIC-IMP-0013", "Liquor Import Permit - Kingdom Entry", "Tokyo Liquor Import Co., Ltd.", "IMPORT", "2026-04-01", "2027-03-31", 210, "NORMAL"],
+  ["LIC-IMP-0014", "Imported Liquor Label Approval Certificate", "Tokyo Liquor Import Co., Ltd.", "IMPORT", "2026-03-15", "2026-09-12", 10, "EXPIRING_SOON"],
+  ["LIC-IMP-0015", "Import Completion Evidence Filing", "Tokyo Liquor Import Co., Ltd.", "IMPORT", "2026-06-01", "2028-05-31", 637, "NORMAL"],
+  ["LIC-IMP-0016", "Excise Stamp Control Permit", "Tokyo Liquor Import Co., Ltd.", "IMPORT", "2026-08-20", "2026-10-02", 30, "EXPIRING_SOON"],
 ] as const;
 
 // Credit limits/balances are in JPY, sized for small-to-mid Japanese liquor retailers,
 // restaurants/bars, and distributors.
 const customers = [
-  ["CUS-0001", "Tokyo Shuhan Trading Co., Ltd.", "DISTRIBUTOR", "LIC-SELL-2201", "2026-09-20", 12000000, 8700000, 3300000, 8, "NORMAL"],
-  ["CUS-0002", "Shiawase Supermarket", "RETAIL_WHOLESALE", "LIC-SELL-2202", "2026-09-15", 3000000, 2880000, 120000, 5, "NEAR_LIMIT"],
-  ["CUS-0003", "Sumida River Riverside Bar", "RESTAURANT_BAR", "LIC-SELL-2203", "2026-11-30", 1800000, 540000, 1260000, 10, "NORMAL"],
-  ["CUS-0004", "24-Hour Minimart Nakano", "RETAIL_WHOLESALE", "LIC-SELL-2204", "2025-07-31", 900000, 240000, 660000, 5, "NORMAL"],
-  ["CUS-0005", "Hokkaido Liquor Distribution Co., Ltd.", "DISTRIBUTOR", "LIC-SELL-2205", "2027-05-31", 10800000, 1920000, 8880000, 8, "NORMAL"],
-  ["CUS-0006", "Obaachan's Kitchen Restaurant", "RESTAURANT_BAR", "LIC-SELL-2206", "2026-09-05", 1500000, 1560000, -60000, 10, "OVER_LIMIT"],
-  ["CUS-0007", "DrinkHub Online Store", "ONLINE", "-", "-", 2400000, 330000, 2070000, 6, "NO_LICENSE"],
+  ["CUS-0001", "Tokyo Shuhan Trading Co., Ltd.", "DISTRIBUTOR", 12000000, 8700000, 3300000, 8, "NORMAL"],
+  ["CUS-0002", "Shiawase Supermarket", "RETAIL_WHOLESALE", 3000000, 2880000, 120000, 5, "NEAR_LIMIT"],
+  ["CUS-0003", "Sumida River Riverside Bar", "RESTAURANT_BAR", 1800000, 540000, 1260000, 10, "NORMAL"],
+  ["CUS-0004", "24-Hour Minimart Nakano", "RETAIL_WHOLESALE", 900000, 240000, 660000, 5, "NORMAL"],
+  ["CUS-0005", "Hokkaido Liquor Distribution Co., Ltd.", "DISTRIBUTOR", 10800000, 1920000, 8880000, 8, "NORMAL"],
+  ["CUS-0006", "Obaachan's Kitchen Restaurant", "RESTAURANT_BAR", 1500000, 1560000, -60000, 10, "OVER_LIMIT"],
+  ["CUS-0007", "DrinkHub Online Store", "ONLINE", 2400000, 330000, 2070000, 6, "NO_LICENSE"],
+] as const;
+
+// Each customer's liquor sales license, managed separately from the Customer master record
+// (one customer may have multiple licenses over time — see the renewal-chain example for
+// CUS-0004 below). applicableChannel restricts a license to the customer's own sales
+// channel, demonstrating the Sales Order channel filter. CUS-0007 (DrinkHub) intentionally
+// has only a pending license, to demonstrate the "no valid active license, order blocked" flow.
+const customerLicenses = [
+  {
+    licenseNumber: "LIC-SELL-2201",
+    customerCode: "CUS-0001",
+    licenseType: "Liquor Wholesale Business License",
+    applicableChannel: "DISTRIBUTOR",
+    issueDate: "2025-03-01",
+    expiryDate: "2026-09-20",
+    status: CustomerLicenseStatus.ACTIVE,
+  },
+  {
+    licenseNumber: "LIC-SELL-2201-ONLINE",
+    customerCode: "CUS-0001",
+    licenseType: "Online Liquor Retail Addendum",
+    applicableChannel: "ONLINE",
+    issueDate: "2026-08-15",
+    expiryDate: "2026-10-14",
+    status: CustomerLicenseStatus.PENDING,
+  },
+  {
+    licenseNumber: "LIC-SELL-2202",
+    customerCode: "CUS-0002",
+    licenseType: "Liquor Retail Business License",
+    applicableChannel: "RETAIL_WHOLESALE",
+    issueDate: "2024-10-15",
+    expiryDate: "2026-09-15",
+    status: CustomerLicenseStatus.ACTIVE,
+  },
+  {
+    licenseNumber: "LIC-SELL-2202-S1",
+    customerCode: "CUS-0002",
+    licenseType: "Liquor Retail Business License",
+    applicableChannel: "RETAIL_WHOLESALE",
+    issueDate: "2025-02-01",
+    expiryDate: "2027-01-31",
+    status: CustomerLicenseStatus.SUSPENDED,
+  },
+  {
+    licenseNumber: "LIC-SELL-2203",
+    customerCode: "CUS-0003",
+    licenseType: "Liquor Retail Business License (Restaurant/Bar)",
+    applicableChannel: "RESTAURANT_BAR",
+    issueDate: "2025-05-01",
+    expiryDate: "2026-11-30",
+    status: CustomerLicenseStatus.ACTIVE,
+  },
+  {
+    licenseNumber: "LIC-SELL-2203-EVENT",
+    customerCode: "CUS-0003",
+    licenseType: "Temporary Event Liquor Sales Permit",
+    applicableChannel: "RESTAURANT_BAR",
+    issueDate: "2026-08-01",
+    expiryDate: "2026-08-31",
+    status: CustomerLicenseStatus.EXPIRED,
+  },
+  {
+    licenseNumber: "LIC-SELL-2204",
+    customerCode: "CUS-0004",
+    licenseType: "Liquor Retail Business License",
+    applicableChannel: "RETAIL_WHOLESALE",
+    issueDate: "2024-08-01",
+    expiryDate: "2025-07-31",
+    status: CustomerLicenseStatus.EXPIRED,
+  },
+  {
+    licenseNumber: "LIC-SELL-2205",
+    customerCode: "CUS-0005",
+    licenseType: "Liquor Wholesale Business License",
+    applicableChannel: "DISTRIBUTOR",
+    issueDate: "2025-06-01",
+    expiryDate: "2027-05-31",
+    status: CustomerLicenseStatus.ACTIVE,
+  },
+  {
+    licenseNumber: "LIC-SELL-2205-OLD",
+    customerCode: "CUS-0005",
+    licenseType: "Liquor Wholesale Business License",
+    applicableChannel: "DISTRIBUTOR",
+    issueDate: "2023-06-01",
+    expiryDate: "2025-05-31",
+    status: CustomerLicenseStatus.EXPIRED,
+  },
+  {
+    licenseNumber: "LIC-SELL-2206",
+    customerCode: "CUS-0006",
+    licenseType: "Liquor Retail Business License (Restaurant/Bar)",
+    applicableChannel: "RESTAURANT_BAR",
+    issueDate: "2025-01-20",
+    expiryDate: "2026-09-05",
+    status: CustomerLicenseStatus.ACTIVE,
+  },
+  {
+    licenseNumber: "LIC-SELL-2206-RVK",
+    customerCode: "CUS-0006",
+    licenseType: "Liquor Retail Business License (Restaurant/Bar)",
+    applicableChannel: "RESTAURANT_BAR",
+    issueDate: "2024-01-20",
+    expiryDate: "2026-01-19",
+    status: CustomerLicenseStatus.REVOKED,
+  },
+  {
+    licenseNumber: "LIC-SELL-2207-P1",
+    customerCode: "CUS-0007",
+    licenseType: "Online Liquor Retail License",
+    applicableChannel: "ONLINE",
+    issueDate: "2026-08-25",
+    expiryDate: "2027-08-24",
+    status: CustomerLicenseStatus.PENDING,
+  },
 ] as const;
 
 // A sales order can ship several products to one customer in a single order/invoice
@@ -380,6 +495,10 @@ async function main() {
     prisma.stockTransaction.deleteMany(),
     prisma.salesOrderItem.deleteMany(),
     prisma.salesOrder.deleteMany(),
+    // Break the self-referential renewal chain before bulk-deleting, otherwise the FK
+    // constraint on renewedFromId can reject deleting a predecessor row in the same batch.
+    prisma.customerLicense.updateMany({ data: { renewedFromId: null } }),
+    prisma.customerLicense.deleteMany(),
     prisma.inventoryStock.deleteMany(),
     prisma.importOrderItem.deleteMany(),
     prisma.importOrder.deleteMany(),
@@ -466,14 +585,12 @@ async function main() {
   }
 
   const customerIdByCode = new Map<string, number>();
-  for (const [customerCode, customerName, channelType, licenseNo, licenseExpiryDate, creditLimit, currentBalance, availableCredit, standardDiscount, creditStatus] of customers) {
+  for (const [customerCode, customerName, channelType, creditLimit, currentBalance, availableCredit, standardDiscount, creditStatus] of customers) {
     const record = await prisma.customer.create({
       data: {
         customerCode,
         customerName,
         channelType,
-        licenseNo: nullable(licenseNo),
-        licenseExpiryDate: licenseExpiryDate === "-" ? null : date(licenseExpiryDate),
         creditLimit,
         currentBalance,
         availableCredit,
@@ -484,6 +601,55 @@ async function main() {
     customerIdByCode.set(customerCode, record.customerId);
   }
 
+  // Each customer's currently-usable license, keyed by customerCode — updated below when
+  // CUS-0004's license gets renewed, so historical sales orders reference whichever license
+  // is actually on file for that customer today.
+  const customerLicenseByCode = new Map<string, { customerLicenseId: number; licenseNumber: string; licenseType: string; expiryDate: Date }>();
+  const customerLicenseByNumber = new Map<string, { customerLicenseId: number; licenseNumber: string; licenseType: string; expiryDate: Date }>();
+  for (const cl of customerLicenses) {
+    const record = await prisma.customerLicense.create({
+      data: {
+        customerId: customerIdByCode.get(cl.customerCode)!,
+        licenseNumber: cl.licenseNumber,
+        licenseType: cl.licenseType,
+        applicableChannel: cl.applicableChannel,
+        issueDate: date(cl.issueDate),
+        expiryDate: date(cl.expiryDate),
+        status: cl.status,
+        createdBy: "System Seed",
+        updatedBy: "System Seed",
+        statusChangedBy: "System Seed",
+        statusChangedAt: new Date(),
+      },
+    });
+    const seededLicense = {
+      customerLicenseId: record.customerLicenseId,
+      licenseNumber: record.licenseNumber,
+      licenseType: record.licenseType,
+      expiryDate: record.expiryDate,
+    };
+    customerLicenseByNumber.set(record.licenseNumber, seededLicense);
+    if (record.status === CustomerLicenseStatus.ACTIVE) {
+      customerLicenseByCode.set(cl.customerCode, seededLicense);
+    }
+  }
+
+  // Renewal-chain example: CUS-0004's expired license is renewed through the real
+  // CustomerLicenseModel.renew flow (not a raw insert) — the old LIC-SELL-2204 row is kept,
+  // marked EXPIRED, and linked to the new ACTIVE LIC-SELL-2204-R1 via renewedFromId.
+  const renewedLicense = await CustomerLicenseModel.renew(customerLicenseByNumber.get("LIC-SELL-2204")!.customerLicenseId, {
+    licenseNumber: "LIC-SELL-2204-R1",
+    issueDate: date("2025-08-15"),
+    expiryDate: date("2027-08-14"),
+    actor: "System Seed",
+  });
+  customerLicenseByCode.set("CUS-0004", {
+    customerLicenseId: renewedLicense.customerLicenseId,
+    licenseNumber: renewedLicense.licenseNumber,
+    licenseType: renewedLicense.licenseType,
+    expiryDate: renewedLicense.expiryDate,
+  });
+
   for (const order of salesOrders) {
     const itemRows = order.items.map((item) => ({
       productId: productIdByCode.get(item.productCode)!,
@@ -493,6 +659,9 @@ async function main() {
       lotBatch: item.lotBatch,
       netValue: item.quantity * item.unitPrice * (1 - item.discount / 100),
     }));
+    // CUS-0007 (DrinkHub) has no license on file, so its one order is left unlinked —
+    // a legacy record predating strict license enforcement, which the schema tolerates.
+    const license = customerLicenseByCode.get(order.customerCode);
     await prisma.salesOrder.create({
       data: {
         orderNo: order.orderNo,
@@ -502,6 +671,14 @@ async function main() {
         approver: nullable(order.approver),
         netValue: itemRows.reduce((sum, row) => sum + row.netValue, 0),
         items: { create: itemRows },
+        ...(license
+          ? {
+              customerLicenseId: license.customerLicenseId,
+              licenseNumberSnapshot: license.licenseNumber,
+              licenseTypeSnapshot: license.licenseType,
+              licenseExpirySnapshot: license.expiryDate,
+            }
+          : {}),
       },
     });
   }
@@ -562,6 +739,7 @@ async function main() {
   await SalesOrderModel.create({
     orderNo: "SO-2026-3310",
     customerId: customerIdByCode.get("CUS-0003")!,
+    customerLicenseId: customerLicenseByCode.get("CUS-0003")!.customerLicenseId,
     deliveryStatus: "PENDING",
     invoiceNo: "INV-2026-8810",
     items: [

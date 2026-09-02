@@ -1,11 +1,12 @@
 import { AlertTriangle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "./Button";
 import { Modal } from "./Modal";
 
 export function ConfirmDialog({
   title,
   message,
-  confirmLabel = "ยืนยันลบ",
+  confirmLabel,
   loading,
   onConfirm,
   onCancel,
@@ -17,6 +18,7 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Modal
       title={title}
@@ -25,10 +27,10 @@ export function ConfirmDialog({
       footer={
         <>
           <Button variant="secondary" size="sm" onClick={onCancel}>
-            ยกเลิก
+            {t("common.cancel")}
           </Button>
           <Button variant="danger" size="sm" onClick={onConfirm} loading={loading}>
-            {confirmLabel}
+            {confirmLabel ?? t("common.delete")}
           </Button>
         </>
       }

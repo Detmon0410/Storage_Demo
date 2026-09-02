@@ -1,6 +1,6 @@
 import i18n from "../i18n";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000/api";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
 export class ApiError extends Error {
   status: number;
@@ -10,7 +10,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${BASE_URL}${path}`, {

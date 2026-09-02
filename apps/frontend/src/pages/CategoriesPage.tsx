@@ -1,8 +1,8 @@
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { categoryApi } from "../api/resources";
-import type { Category } from "../api/types";
+import { categoryApi, productApi } from "../api/resources";
+import type { Category, Product } from "../api/types";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
@@ -13,7 +13,10 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { SearchInput } from "../components/ui/SearchInput";
 import { EmptyState, ErrorState, LoadingState } from "../components/ui/States";
 import { useToast } from "../components/ui/Toast";
+import { useList } from "../hooks/useList";
 import { useResource } from "../hooks/useResource";
+import { formatCurrency, formatNumber } from "../lib/format";
+import { statusTone } from "../lib/status";
 
 type FormState = {
   categoryCode: string;
@@ -27,11 +30,25 @@ const emptyForm: FormState = { categoryCode: "", categoryName: "", description: 
 export function CategoriesPage() {
   const { t } = useTranslation();
   const { rows, loading, error, saving, reload, create, update, remove } = useResource(categoryApi, (r) => r.categoryId);
+  const products = useList(() => productApi.list());
   const toast = useToast();
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Category | null | undefined>(undefined);
   const [deleting, setDeleting] = useState<Category | null>(null);
+  const [viewing, setViewing] = useState<Category | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
+
+  const productsByCategoryId = useMemo(() => {
+    const map = new Map<number, Product[]>();
+    for (const product of products) {
+      const list = map.get(product.categoryId);
+      if (list) list.push(product);
+      else map.set(product.categoryId, [product]);
+    }
+    return map;
+  }, [products]);
+
+  const viewingProducts = viewing ? (productsByCategoryId.get(viewing.categoryId) ?? []) : [];
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -98,11 +115,25 @@ export function CategoriesPage() {
       render: (r) => <Badge tone={r.isActive ? "success" : "neutral"}>{t(r.isActive ? "status.boolean.active" : "status.boolean.inactive")}</Badge>,
     },
     {
+      key: "productCount",
+      header: t("category.col.productCount"),
+      render: (r) => (
+        <button
+          type="button"
+          onClick={() => setViewing(r)}
+          className="rounded-full transition-opacity hover:opacity-75"
+        >
+          <Badge tone="info">{t("category.productCount", { count: productsByCategoryId.get(r.categoryId)?.length ?? 0 })}</Badge>
+        </button>
+      ),
+    },
+    {
       key: "actions",
       header: "",
       className: "text-right",
       render: (r) => (
         <div className="flex justify-end gap-1">
+          <Button variant="ghost" size="sm" onClick={() => setViewing(r)} icon={<Eye className="h-3.5 w-3.5" />} />
           <Button variant="ghost" size="sm" onClick={() => openEdit(r)} icon={<Pencil className="h-3.5 w-3.5" />} />
           <Button variant="ghost" size="sm" onClick={() => setDeleting(r)} icon={<Trash2 className="h-3.5 w-3.5 text-rose-500" />} />
         </div>
@@ -188,6 +219,56 @@ export function CategoriesPage() {
           onCancel={() => setDeleting(null)}
           onConfirm={handleDelete}
         />
+      )}
+
+      {viewing && (
+        <Modal
+          title={t("category.viewProductsTitle", { name: t(`category.name.${viewing.categoryCode}`, viewing.categoryName) })}
+          subtitle={t("category.productCount", { count: viewingProducts.length })}
+          onClose={() => setViewing(null)}
+          width="max-w-2xl"
+          footer={
+            <Button variant="secondary" size="sm" onClick={() => setViewing(null)}>
+              {t("common.close")}
+            </Button>
+          }
+        >
+          {viewingProducts.length === 0 ? (
+            <EmptyState title={t("category.viewProductsEmpty")} />
+          ) : (
+            <DataTable
+              columns={[
+                {
+                  key: "sku",
+                  header: t("product.col.skuProduct"),
+                  render: (p: Product) => (
+                    <div>
+                      <p className="font-medium text-slate-900">{p.productName}</p>
+                      <p className="font-mono text-xs text-slate-400">{p.productCode}</p>
+                    </div>
+                  ),
+                },
+                {
+                  key: "stock",
+                  header: t("product.col.stock"),
+                  render: (p: Product) => (
+                    <span className={p.stockQty <= p.minStock ? "font-semibold text-rose-600" : "text-slate-700"}>
+                      {formatNumber(p.stockQty)} {p.unit}
+                    </span>
+                  ),
+                },
+                { key: "price", header: t("product.col.price"), render: (p: Product) => formatCurrency(p.unitPrice, p.currency) },
+                {
+                  key: "status",
+                  header: t("common.col.status"),
+                  render: (p: Product) => <Badge tone={statusTone(p.status)}>{t(`status.product.${p.status}`, p.status)}</Badge>,
+                },
+              ]}
+              rows={viewingProducts}
+              getRowKey={(p) => p.productId}
+            />
+          )}
+        </Modal>
       )}
     </div>
   );

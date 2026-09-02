@@ -70,14 +70,25 @@ export function InventoryStockPage() {
   const totalOnHand = useMemo(() => rows.reduce((sum, r) => sum + r.quantityOnHand, 0), [rows]);
   const agingCount = rows.filter((r) => r.stockStatus !== "NORMAL").length;
 
+  const usedImportOrderItemIds = useMemo(
+    () =>
+      new Set(
+        rows
+          .filter((r) => r.inventoryStockId !== editing?.inventoryStockId)
+          .map((r) => r.importOrderItemId)
+          .filter((id): id is number => id != null),
+      ),
+    [rows, editing],
+  );
+
   const availableSourceItems = useMemo(() => {
     if (!form.productId) return [];
     return importOrders.flatMap((order) =>
       (order.items ?? [])
-        .filter((item) => String(item.productId) === form.productId)
+        .filter((item) => String(item.productId) === form.productId && !usedImportOrderItemIds.has(item.importOrderItemId))
         .map((item) => ({ ...item, orderNo: order.orderNo, orderStatus: order.status })),
     );
-  }, [importOrders, form.productId]);
+  }, [importOrders, form.productId, usedImportOrderItemIds]);
 
   const openCreate = () => {
     setForm(emptyForm);
