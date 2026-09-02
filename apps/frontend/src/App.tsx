@@ -12,10 +12,12 @@ import { SalesOrdersPage } from "./pages/SalesOrdersPage";
 import { StockTransactionsPage } from "./pages/StockTransactionsPage";
 import { SuppliersPage } from "./pages/SuppliersPage";
 
+const routerBasename = import.meta.env.BASE_URL === "/" ? undefined : import.meta.env.BASE_URL.replace(/\/$/, "");
+
 function App() {
   return (
     <ToastProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={routerBasename}>
         <Routes>
           <Route element={<AppShell />}>
             <Route path="/" element={<DashboardPage />} />

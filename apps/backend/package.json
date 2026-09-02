@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "host": "tsx watch src/index.ts",
+    "host": "tsx watch src/index.ts --host 26.194.75.210",
     "build": "tsc -b && prisma generate",
     "start": "node dist/index.js",
     "prisma:generate": "prisma generate",

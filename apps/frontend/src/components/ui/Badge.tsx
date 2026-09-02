@@ -8,10 +8,19 @@ const TONE_CLASSES: Record<Tone, string> = {
   neutral: "bg-slate-100 text-slate-600 ring-slate-500/20",
 };
 
-export function Badge({ tone = "neutral", children }: { tone?: Tone; children: React.ReactNode }) {
+export function Badge({
+  tone = "neutral",
+  wrap,
+  children,
+}: {
+  tone?: Tone;
+  /** Allow the badge's text to wrap instead of forcing it onto one line — for use in narrow/responsive layouts. */
+  wrap?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset whitespace-nowrap ${TONE_CLASSES[tone]}`}
+      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${wrap ? "" : "whitespace-nowrap"} ${TONE_CLASSES[tone]}`}
     >
       {children}
     </span>

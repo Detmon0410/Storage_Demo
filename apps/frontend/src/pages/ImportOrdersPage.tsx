@@ -2,7 +2,7 @@ import { Package, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { importOrderApi, productApi, supplierApi } from "../api/resources";
-import type { ImportOrder } from "../api/types";
+import type { ImportOrder, ImportOrderItem } from "../api/types";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
@@ -15,7 +15,7 @@ import { EmptyState, ErrorState, LoadingState } from "../components/ui/States";
 import { useToast } from "../components/ui/Toast";
 import { useList } from "../hooks/useList";
 import { useResource } from "../hooks/useResource";
-import { formatCurrency, formatDate, toDateInputValue } from "../lib/format";
+import { formatCurrency, formatDate, formatNumber, toDateInputValue } from "../lib/format";
 import { statusTone } from "../lib/status";
 
 type ItemRow = { productId: string; quantity: string; unitPrice: string };
@@ -61,6 +61,7 @@ export function ImportOrdersPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [editing, setEditing] = useState<ImportOrder | null | undefined>(undefined);
   const [deleting, setDeleting] = useState<ImportOrder | null>(null);
+  const [viewingItems, setViewingItems] = useState<ImportOrder | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
 
   const filtered = useMemo(() => {
@@ -168,10 +169,16 @@ export function ImportOrdersPage() {
   };
 
   const columns: Column<ImportOrder>[] = [
-    { key: "orderNo", header: t("common.col.orderNo"), render: (r) => <span className="font-mono text-xs font-medium text-slate-700">{r.orderNo}</span> },
+    {
+      key: "orderNo",
+      header: t("common.col.orderNo"),
+      headerClassName: "w-[9%]",
+      render: (r) => <span className="font-mono text-xs font-medium text-slate-700">{r.orderNo}</span>,
+    },
     {
       key: "supplier",
       header: t("common.col.supplier"),
+      headerClassName: "w-[15%]",
       render: (r) => (
         <div>
           <p className="font-medium text-slate-900">{r.supplier?.supplierName ?? "-"}</p>
@@ -182,41 +189,49 @@ export function ImportOrdersPage() {
     {
       key: "items",
       header: t("importOrder.col.items"),
+      headerClassName: "w-[15%]",
       render: (r) => {
         const items = r.items ?? [];
         if (items.length === 0) return <span className="text-slate-400">-</span>;
-        const shown = items.slice(0, 2);
+        const totalQty = items.reduce((sum, item) => sum + item.quantity, 0);
         return (
-          <div className="flex flex-wrap items-center gap-1">
-            {shown.map((item) => (
-              <span
-                key={item.importOrderItemId}
-                className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600"
-              >
-                <Package className="h-3 w-3" />
-                {item.product?.productName ?? item.productId} × {item.quantity}
-              </span>
-            ))}
-            {items.length > shown.length && (
-              <span className="text-xs text-slate-400">+{items.length - shown.length}</span>
-            )}
-          </div>
+          <button
+            type="button"
+            onClick={() => setViewingItems(r)}
+            className="rounded-full text-left transition-opacity hover:opacity-75"
+          >
+            <Badge tone="info" wrap>
+              <Package className="h-3 w-3 shrink-0" />
+              {t("importOrder.items.badge", { count: items.length, qty: formatNumber(totalQty) })}
+            </Badge>
+          </button>
         );
       },
     },
-    { key: "incoterms", header: t("importOrder.col.incoterms"), render: (r) => r.incoterms },
-    { key: "orderDate", header: t("importOrder.col.orderDate"), render: (r) => formatDate(r.orderDate) },
-    { key: "eta", header: t("importOrder.col.eta"), render: (r) => formatDate(r.etaDate) },
-    { key: "value", header: t("importOrder.col.value"), render: (r) => formatCurrency(r.totalValue) },
+    { key: "incoterms", header: t("importOrder.col.incoterms"), headerClassName: "w-[9%]", render: (r) => r.incoterms },
+    { key: "orderDate", header: t("importOrder.col.orderDate"), headerClassName: "w-[8%]", render: (r) => formatDate(r.orderDate) },
+    { key: "eta", header: t("importOrder.col.eta"), headerClassName: "w-[7%]", render: (r) => formatDate(r.etaDate) },
+    { key: "value", header: t("importOrder.col.value"), headerClassName: "w-[8%]", render: (r) => formatCurrency(r.totalValue) },
     {
       key: "status",
       header: t("common.col.status"),
-      render: (r) => <Badge tone={statusTone(r.status)}>{t(`status.importOrder.${r.status}`, r.status)}</Badge>,
+      headerClassName: "w-[13%]",
+      render: (r) => (
+        <Badge tone={statusTone(r.status)} wrap>
+          {t(`status.importOrder.${r.status}`, r.status)}
+        </Badge>
+      ),
     },
-    { key: "approver", header: t("importOrder.col.approver"), render: (r) => <span className="text-xs text-slate-500">{r.approver ?? "-"}</span> },
+    {
+      key: "approver",
+      header: t("importOrder.col.approver"),
+      headerClassName: "w-[10%]",
+      render: (r) => <span className="text-xs text-slate-500">{r.approver ?? "-"}</span>,
+    },
     {
       key: "actions",
       header: "",
+      headerClassName: "w-[8%]",
       className: "text-right",
       render: (r) => (
         <div className="flex justify-end gap-1">
@@ -264,6 +279,7 @@ export function ImportOrdersPage() {
           rows={filtered}
           getRowKey={(r) => r.importOrderId}
           rowClassName={(r) => (r.status === "ISSUE" ? "bg-rose-50/40" : "")}
+          fitContainer
         />
       )}
 
@@ -430,6 +446,40 @@ export function ImportOrdersPage() {
           onCancel={() => setDeleting(null)}
           onConfirm={handleDelete}
         />
+      )}
+
+      {viewingItems && (
+        <Modal
+          title={t("importOrder.viewItemsTitle", { no: viewingItems.orderNo })}
+          subtitle={t("importOrder.items.summary", { count: (viewingItems.items ?? []).length })}
+          onClose={() => setViewingItems(null)}
+          width="max-w-2xl"
+          footer={
+            <Button variant="secondary" size="sm" onClick={() => setViewingItems(null)}>
+              {t("common.close")}
+            </Button>
+          }
+        >
+          <DataTable
+            columns={[
+              {
+                key: "product",
+                header: t("common.col.product"),
+                render: (item: ImportOrderItem) => (
+                  <div>
+                    <p className="font-medium text-slate-900">{item.product?.productName ?? item.productId}</p>
+                    <p className="font-mono text-xs text-slate-400">{item.product?.productCode}</p>
+                  </div>
+                ),
+              },
+              { key: "quantity", header: t("common.col.quantity"), render: (item: ImportOrderItem) => formatNumber(item.quantity) },
+              { key: "unitPrice", header: t("common.col.unitPrice"), render: (item: ImportOrderItem) => formatCurrency(item.unitPrice) },
+              { key: "subtotal", header: t("importOrder.items.subtotal"), render: (item: ImportOrderItem) => formatCurrency(item.subtotal) },
+            ]}
+            rows={viewingItems.items ?? []}
+            getRowKey={(item) => item.importOrderItemId}
+          />
+        </Modal>
       )}
     </div>
   );

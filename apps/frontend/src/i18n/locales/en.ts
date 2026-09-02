@@ -271,6 +271,7 @@ export const en = {
     modalEdit: "Edit Import Order",
     modalSubtitle: "FR-03: every new order must pass through Staging before it enters the warehouse",
     col: { items: "Line Items (multiple varieties from one supplier)", incoterms: "Incoterms", orderDate: "Order Date", eta: "ETA", value: "Total Value", approver: "Approver" },
+    viewItemsTitle: 'Line Items — "{{no}}"',
     field: {
       orderNo: "Order No.",
       orderNoPlaceholder: "e.g. IMP-2026-0154",
@@ -297,6 +298,9 @@ export const en = {
       unitPricePlaceholder: "Unit price",
       summary: "{{count}} line items",
       total: "Total value {{amount}}",
+      subtotal: "Subtotal",
+      badge_one: "{{count}} variety · {{qty}} units",
+      badge_other: "{{count}} varieties · {{qty}} units",
     },
     toast: {
       created: 'Created import order "{{no}}" — starting status is Staging',

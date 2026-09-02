@@ -272,6 +272,7 @@ export const ja: TranslationSchema = {
     modalEdit: "輸入発注を編集",
     modalSubtitle: "FR-03: 新規発注は必ず受付確認を経てから入庫処理に進みます",
     col: { items: "明細(同一仕入先から複数品目)", incoterms: "インコタームズ", orderDate: "発注日", eta: "到着予定日", value: "合計金額", approver: "承認者" },
+    viewItemsTitle: "明細一覧 ―「{{no}}」",
     field: {
       orderNo: "発注番号",
       orderNoPlaceholder: "例: IMP-2026-0154",
@@ -298,6 +299,8 @@ export const ja: TranslationSchema = {
       unitPricePlaceholder: "単価",
       summary: "{{count}} 件の明細",
       total: "合計金額 {{amount}}",
+      subtotal: "小計",
+      badge: "{{count}} 品目 ・ 合計 {{qty}} 個",
     },
     toast: {
       created: "輸入発注「{{no}}」を作成しました ― 初期ステータスは受付確認です",
