@@ -1,21 +1,51 @@
 feature,method,endpoint,description,sample_body,expected_status
 Health,GET,http://localhost:4000/health,Server liveness check,,200
-Categories,GET,http://localhost:4000/api/categories,List all categories,,200
+Categories,GET,http://localhost:4000/api/categories,List all liquor categories,,200
 Categories,GET,http://localhost:4000/api/categories/:id,Get one category by id,,200
 Categories,POST,http://localhost:4000/api/categories,Create a category,"{""categoryCode"":""CAT-TEST"",""categoryName"":""Test Category"",""description"":""for testing"",""isActive"":true}",201
 Categories,PUT,http://localhost:4000/api/categories/:id,Update a category,"{""categoryName"":""Updated Name""}",200
 Categories,DELETE,http://localhost:4000/api/categories/:id,Delete a category,,204
-Suppliers,GET,http://localhost:4000/api/suppliers,List all suppliers,,200
+Suppliers,GET,http://localhost:4000/api/suppliers,List all import suppliers,,200
 Suppliers,GET,http://localhost:4000/api/suppliers/:id,Get one supplier by id,,200
-Suppliers,POST,http://localhost:4000/api/suppliers,Create a supplier,"{""supplierCode"":""SUP-TEST"",""supplierName"":""Test Supplier"",""contactName"":""Jane Doe"",""email"":""jane@example.com"",""phone"":""000-0000-0000"",""status"":""ACTIVE""}",201
+Suppliers,POST,http://localhost:4000/api/suppliers,Create a supplier,"{""supplierCode"":""SUP-TEST"",""supplierName"":""Test Supplier"",""country"":""ญี่ปุ่น"",""status"":""ACTIVE""}",201
 Suppliers,PUT,http://localhost:4000/api/suppliers/:id,Update a supplier,"{""status"":""INACTIVE""}",200
 Suppliers,DELETE,http://localhost:4000/api/suppliers/:id,Delete a supplier,,204
-Products,GET,http://localhost:4000/api/products,List all products (includes category and supplier),,200
+Products,GET,http://localhost:4000/api/products,List all products/SKUs (includes category and supplier),,200
 Products,GET,http://localhost:4000/api/products/:id,Get one product by id,,200
-Products,POST,http://localhost:4000/api/products,Create a product,"{""productCode"":""PRD-TEST"",""productName"":""Test Product"",""categoryId"":2,""supplierId"":1,""unit"":""PCS"",""stockQty"":10,""minStock"":2,""unitPrice"":1000,""currency"":""JPY"",""status"":""IN_STOCK"",""description"":""for testing""}",201
-Products,PUT,http://localhost:4000/api/products/:id,Update a product,"{""stockQty"":5}",200
+Products,POST,http://localhost:4000/api/products,Create a product/SKU,"{""productCode"":""SKU-TEST"",""productName"":""Test Whisky"",""categoryId"":1,""supplierId"":1,""unit"":""ขวด"",""stockQty"":10,""minStock"":2,""unitPrice"":1000,""costPrice"":700,""suggestedPrice"":1000,""abvPercent"":40,""packageSizeMl"":700,""currency"":""THB"",""status"":""พร้อมขาย""}",201
+Products,PUT,http://localhost:4000/api/products/:id,Update a product,"{""stockQty"":5,""status"":""ใกล้หมด""}",200
 Products,DELETE,http://localhost:4000/api/products/:id,Delete a product,,204
 Stock Transactions,GET,http://localhost:4000/api/stock-transactions,List all stock transactions (includes product),,200
 Stock Transactions,GET,http://localhost:4000/api/stock-transactions/:id,Get one stock transaction by id,,200
-Stock Transactions,POST,http://localhost:4000/api/stock-transactions,"Create a stock transaction (also adjusts the linked product's stockQty: +qty for IN, -qty for OUT)","{""transactionNo"":""TX-TEST-001"",""productId"":1,""transactionType"":""IN"",""quantity"":5,""referenceNo"":""PO-TEST-001"",""note"":""test receiving""}",201
+Stock Transactions,POST,http://localhost:4000/api/stock-transactions,"Create a stock transaction (also adjusts the linked product's stockQty: +qty for IN, -qty for OUT)","{""transactionNo"":""TX-TEST-001"",""productId"":1,""transactionType"":""IN"",""quantity"":5,""referenceNo"":""LOT-TEST-001"",""note"":""test receiving""}",201
 Stock Transactions,DELETE,http://localhost:4000/api/stock-transactions/:id,"Delete a stock transaction (reverses its stockQty adjustment on the product)",,204
+Import Orders,GET,http://localhost:4000/api/import-orders,List all import orders (includes supplier),,200
+Import Orders,GET,http://localhost:4000/api/import-orders/:id,Get one import order by id,,200
+Import Orders,POST,http://localhost:4000/api/import-orders,Create an import order,"{""orderNo"":""IMP-TEST-001"",""supplierId"":1,""country"":""สกอตแลนด์"",""incoterms"":""CIF"",""orderDate"":""2026-07-02"",""etaDate"":""2026-08-10"",""skuItemCount"":2,""totalValue"":125000,""status"":""รอตรวจสอบ (Staging)""}",201
+Import Orders,PUT,http://localhost:4000/api/import-orders/:id,Update an import order,"{""status"":""อนุมัติแล้ว"",""approver"":""Supervisor""}",200
+Import Orders,DELETE,http://localhost:4000/api/import-orders/:id,Delete an import order,,204
+Licenses,GET,http://localhost:4000/api/licenses,List all licenses,,200
+Licenses,GET,http://localhost:4000/api/licenses/:id,Get one license by id,,200
+Licenses,POST,http://localhost:4000/api/licenses,Create a license,"{""licenseNo"":""LIC-TEST-001"",""licenseType"":""ใบอนุญาตขายส่งสุรา"",""holderName"":""Test Holder"",""category"":""ขาย"",""issueDate"":""2026-01-01"",""expiryDate"":""2026-12-31"",""daysRemaining"":120,""status"":""ปกติ""}",201
+Licenses,PUT,http://localhost:4000/api/licenses/:id,Update a license,"{""status"":""ใกล้หมดอายุ"",""daysRemaining"":10}",200
+Licenses,DELETE,http://localhost:4000/api/licenses/:id,Delete a license,,204
+Customers,GET,http://localhost:4000/api/customers,List all customers (includes license),,200
+Customers,GET,http://localhost:4000/api/customers/:id,Get one customer by id,,200
+Customers,POST,http://localhost:4000/api/customers,Create a customer,"{""customerCode"":""CUS-TEST"",""customerName"":""Test Store"",""channelType"":""ออนไลน์"",""creditLimit"":400000,""currentBalance"":55000,""availableCredit"":345000,""standardDiscount"":6,""creditStatus"":""ปกติ""}",201
+Customers,PUT,http://localhost:4000/api/customers/:id,Update a customer,"{""creditStatus"":""ใกล้เต็มวงเงิน""}",200
+Customers,DELETE,http://localhost:4000/api/customers/:id,Delete a customer,,204
+Sales Orders,GET,http://localhost:4000/api/sales-orders,List all sales orders (includes customer and product),,200
+Sales Orders,GET,http://localhost:4000/api/sales-orders/:id,Get one sales order by id,,200
+Sales Orders,POST,http://localhost:4000/api/sales-orders,Create a sales order,"{""orderNo"":""SO-TEST-001"",""customerId"":1,""productId"":1,""quantity"":12,""unitPrice"":2490,""discount"":5,""netValue"":28386,""lotBatch"":""LOT-TEST-001"",""deliveryStatus"":""รอส่ง"",""invoiceNo"":""INV-TEST-001""}",201
+Sales Orders,PUT,http://localhost:4000/api/sales-orders/:id,Update a sales order,"{""deliveryStatus"":""ส่งสำเร็จ""}",200
+Sales Orders,DELETE,http://localhost:4000/api/sales-orders/:id,Delete a sales order,,204
+Inventory Stocks,GET,http://localhost:4000/api/inventory-stocks,List all inventory lots (includes product),,200
+Inventory Stocks,GET,http://localhost:4000/api/inventory-stocks/:id,Get one inventory lot by id,,200
+Inventory Stocks,POST,http://localhost:4000/api/inventory-stocks,Create an inventory lot,"{""productId"":1,""lotBatch"":""LOT-TEST-001"",""receivedDate"":""2026-07-20"",""quantityOnHand"":120,""stockAgeDays"":43,""stockStatus"":""ปกติ"",""warehouse"":""คลัง A - กรุงเทพ""}",201
+Inventory Stocks,PUT,http://localhost:4000/api/inventory-stocks/:id,Update an inventory lot,"{""stockStatus"":""เริ่มค้าง""}",200
+Inventory Stocks,DELETE,http://localhost:4000/api/inventory-stocks/:id,Delete an inventory lot,,204
+Dashboard KPIs,GET,http://localhost:4000/api/dashboard-kpis,List all dashboard KPI rows,,200
+Dashboard KPIs,GET,http://localhost:4000/api/dashboard-kpis/:id,Get one dashboard KPI row by id,,200
+Dashboard KPIs,POST,http://localhost:4000/api/dashboard-kpis,Create a dashboard KPI row,"{""metricName"":""Test KPI"",""currentValue"":10,""unit"":""รายการ"",""monthTrend"":""เท่าเดิม""}",201
+Dashboard KPIs,PUT,http://localhost:4000/api/dashboard-kpis/:id,Update a dashboard KPI row,"{""currentValue"":11}",200
+Dashboard KPIs,DELETE,http://localhost:4000/api/dashboard-kpis/:id,Delete a dashboard KPI row,,204

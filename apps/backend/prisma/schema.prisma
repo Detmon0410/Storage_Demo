@@ -19,35 +19,44 @@ model Category {
 }
 
 model Supplier {
-  supplierId   Int       @id @default(autoincrement()) @map("supplier_id")
-  supplierCode String    @unique @map("supplier_code")
-  supplierName String    @map("supplier_name")
-  contactName  String?   @map("contact_name")
+  supplierId   Int           @id @default(autoincrement()) @map("supplier_id")
+  supplierCode String        @unique @map("supplier_code")
+  supplierName String        @map("supplier_name")
+  country      String?
+  contactName  String?       @map("contact_name")
   email        String?
   phone        String?
-  status       String    @default("active")
+  status       String        @default("active")
   products     Product[]
+  importOrders ImportOrder[]
 
   @@map("suppliers")
 }
 
 model Product {
-  productId   Int     @id @default(autoincrement()) @map("product_id")
-  productCode String  @unique @map("product_code")
-  productName String  @map("product_name")
-  categoryId  Int     @map("category_id")
-  supplierId  Int     @map("supplier_id")
-  unit        String
-  stockQty    Int     @default(0) @map("stock_qty")
-  minStock    Int     @default(0) @map("min_stock")
-  unitPrice   Decimal @map("unit_price") @db.Decimal(12, 2)
-  currency    String  @default("USD")
-  status      String  @default("active")
-  description String?
+  productId      Int      @id @default(autoincrement()) @map("product_id")
+  productCode    String   @unique @map("product_code")
+  productName    String   @map("product_name")
+  categoryId     Int      @map("category_id")
+  supplierId     Int      @map("supplier_id")
+  unit           String
+  stockQty       Int      @default(0) @map("stock_qty")
+  minStock       Int      @default(0) @map("min_stock")
+  unitPrice      Decimal  @map("unit_price") @db.Decimal(12, 2)
+  costPrice      Decimal? @map("cost_price") @db.Decimal(12, 2)
+  suggestedPrice Decimal? @map("suggested_price") @db.Decimal(12, 2)
+  abvPercent     Decimal? @map("abv_percent") @db.Decimal(5, 2)
+  packageSizeMl  Int?     @map("package_size_ml")
+  currency       String   @default("USD")
+  status         String   @default("active")
+  description    String?
 
   category          Category           @relation(fields: [categoryId], references: [categoryId])
   supplier          Supplier           @relation(fields: [supplierId], references: [supplierId])
   stockTransactions StockTransaction[]
+  salesOrderItems   SalesOrderItem[]
+  inventoryLots     InventoryStock[]
+  importOrderItems  ImportOrderItem[]
 
   @@map("products")
 }
@@ -71,4 +80,133 @@ model StockTransaction {
   product Product @relation(fields: [productId], references: [productId])
 
   @@map("stock_transactions")
+}
+
+model ImportOrder {
+  importOrderId  Int      @id @default(autoincrement()) @map("import_order_id")
+  orderNo        String   @unique @map("order_no")
+  supplierId     Int      @map("supplier_id")
+  country        String
+  incoterms      String
+  orderDate      DateTime @map("order_date") @db.Date
+  etaDate        DateTime @map("eta_date") @db.Date
+  skuItemCount   Int      @map("sku_item_count")
+  totalValue     Decimal  @map("total_value") @db.Decimal(14, 2)
+  status         String
+  approver       String?
+  customsEntryNo String?  @map("customs_entry_no")
+
+  supplier Supplier          @relation(fields: [supplierId], references: [supplierId])
+  items    ImportOrderItem[]
+
+  @@map("import_orders")
+}
+
+model ImportOrderItem {
+  importOrderItemId Int     @id @default(autoincrement()) @map("import_order_item_id")
+  importOrderId     Int     @map("import_order_id")
+  productId         Int     @map("product_id")
+  quantity          Int
+  unitPrice         Decimal @map("unit_price") @db.Decimal(12, 2)
+  subtotal          Decimal @db.Decimal(14, 2)
+
+  importOrder   ImportOrder      @relation(fields: [importOrderId], references: [importOrderId], onDelete: Cascade)
+  product       Product          @relation(fields: [productId], references: [productId])
+  inventoryLots InventoryStock[]
+
+  @@map("import_order_items")
+}
+
+model License {
+  licenseId     Int      @id @default(autoincrement()) @map("license_id")
+  licenseNo     String   @unique @map("license_no")
+  licenseType   String   @map("license_type")
+  holderName    String   @map("holder_name")
+  category      String
+  issueDate     DateTime @map("issue_date") @db.Date
+  expiryDate    DateTime @map("expiry_date") @db.Date
+  daysRemaining Int      @map("days_remaining")
+  status        String
+
+  customers Customer[]
+
+  @@map("licenses")
+}
+
+model Customer {
+  customerId        Int       @id @default(autoincrement()) @map("customer_id")
+  customerCode      String    @unique @map("customer_code")
+  customerName      String    @map("customer_name")
+  channelType       String    @map("channel_type")
+  licenseNo         String?   @map("license_no")
+  licenseExpiryDate DateTime? @map("license_expiry_date") @db.Date
+  creditLimit       Decimal   @map("credit_limit") @db.Decimal(14, 2)
+  currentBalance    Decimal   @map("current_balance") @db.Decimal(14, 2)
+  availableCredit   Decimal   @map("available_credit") @db.Decimal(14, 2)
+  standardDiscount  Decimal   @map("standard_discount") @db.Decimal(5, 2)
+  creditStatus      String    @map("credit_status")
+
+  license     License?     @relation(fields: [licenseNo], references: [licenseNo])
+  salesOrders SalesOrder[]
+
+  @@map("customers")
+}
+
+model SalesOrder {
+  salesOrderId   Int     @id @default(autoincrement()) @map("sales_order_id")
+  orderNo        String  @unique @map("order_no")
+  customerId     Int     @map("customer_id")
+  netValue       Decimal @map("net_value") @db.Decimal(14, 2)
+  deliveryStatus String  @map("delivery_status")
+  invoiceNo      String  @map("invoice_no")
+  approver       String?
+
+  customer Customer         @relation(fields: [customerId], references: [customerId])
+  items    SalesOrderItem[]
+
+  @@map("sales_orders")
+}
+
+model SalesOrderItem {
+  salesOrderItemId Int     @id @default(autoincrement()) @map("sales_order_item_id")
+  salesOrderId     Int     @map("sales_order_id")
+  productId        Int     @map("product_id")
+  quantity         Int
+  unitPrice        Decimal @map("unit_price") @db.Decimal(12, 2)
+  discount         Decimal @db.Decimal(5, 2)
+  netValue         Decimal @map("net_value") @db.Decimal(14, 2)
+  lotBatch         String  @map("lot_batch")
+
+  salesOrder SalesOrder @relation(fields: [salesOrderId], references: [salesOrderId], onDelete: Cascade)
+  product    Product    @relation(fields: [productId], references: [productId])
+
+  @@map("sales_order_items")
+}
+
+model InventoryStock {
+  inventoryStockId  Int      @id @default(autoincrement()) @map("inventory_stock_id")
+  productId         Int      @map("product_id")
+  importOrderItemId Int?     @map("import_order_item_id")
+  lotBatch          String   @map("lot_batch")
+  receivedDate      DateTime @map("received_date") @db.Date
+  quantityOnHand    Int      @map("quantity_on_hand")
+  stockAgeDays      Int      @map("stock_age_days")
+  stockStatus       String   @map("stock_status")
+  warehouse         String
+
+  product         Product          @relation(fields: [productId], references: [productId])
+  importOrderItem ImportOrderItem? @relation(fields: [importOrderItemId], references: [importOrderItemId], onDelete: SetNull)
+
+  @@unique([productId, lotBatch])
+  @@map("inventory_stock")
+}
+
+model DashboardKpi {
+  dashboardKpiId Int     @id @default(autoincrement()) @map("dashboard_kpi_id")
+  metricName     String  @unique @map("metric_name")
+  currentValue   Decimal @map("current_value") @db.Decimal(14, 2)
+  unit           String
+  monthTrend     String  @map("month_trend")
+
+  @@map("dashboard_kpis")
 }

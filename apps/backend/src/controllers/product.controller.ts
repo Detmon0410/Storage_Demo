@@ -13,8 +13,23 @@ export const getProduct = asyncHandler(async (req, res) => {
 });
 
 export const createProduct = asyncHandler(async (req, res) => {
-  const { productCode, productName, categoryId, supplierId, unit, stockQty, minStock, unitPrice, currency, status, description } =
-    req.body;
+  const {
+    productCode,
+    productName,
+    categoryId,
+    supplierId,
+    unit,
+    stockQty,
+    minStock,
+    unitPrice,
+    costPrice,
+    suggestedPrice,
+    abvPercent,
+    packageSizeMl,
+    currency,
+    status,
+    description,
+  } = req.body;
   if (!productCode || !productName || !categoryId || !supplierId || !unit || unitPrice == null) {
     throw new HttpError(400, "productCode, productName, categoryId, supplierId, unit, and unitPrice are required");
   }
@@ -28,6 +43,10 @@ export const createProduct = asyncHandler(async (req, res) => {
       stockQty,
       minStock,
       unitPrice,
+      costPrice,
+      suggestedPrice,
+      abvPercent,
+      packageSizeMl,
       currency,
       status,
       description,
@@ -36,8 +55,23 @@ export const createProduct = asyncHandler(async (req, res) => {
 });
 
 export const updateProduct = asyncHandler(async (req, res) => {
-  const { productCode, productName, categoryId, supplierId, unit, stockQty, minStock, unitPrice, currency, status, description } =
-    req.body;
+  const {
+    productCode,
+    productName,
+    categoryId,
+    supplierId,
+    unit,
+    stockQty,
+    minStock,
+    unitPrice,
+    costPrice,
+    suggestedPrice,
+    abvPercent,
+    packageSizeMl,
+    currency,
+    status,
+    description,
+  } = req.body;
   res.json(
     await ProductModel.update(Number(req.params.id), {
       productCode,
@@ -48,6 +82,10 @@ export const updateProduct = asyncHandler(async (req, res) => {
       stockQty,
       minStock,
       unitPrice,
+      costPrice,
+      suggestedPrice,
+      abvPercent,
+      packageSizeMl,
       currency,
       status,
       description,

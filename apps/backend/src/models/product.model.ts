@@ -22,6 +22,10 @@ export const ProductModel = {
     stockQty?: number;
     minStock?: number;
     unitPrice: number;
+    costPrice?: number;
+    suggestedPrice?: number;
+    abvPercent?: number;
+    packageSizeMl?: number;
     currency?: string;
     status?: string;
     description?: string;
@@ -38,6 +42,10 @@ export const ProductModel = {
       stockQty: number;
       minStock: number;
       unitPrice: number;
+      costPrice: number;
+      suggestedPrice: number;
+      abvPercent: number;
+      packageSizeMl: number;
       currency: string;
       status: string;
       description: string;

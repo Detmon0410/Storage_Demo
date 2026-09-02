@@ -8,6 +8,7 @@ export const SupplierModel = {
   create: (data: {
     supplierCode: string;
     supplierName: string;
+    country?: string;
     contactName?: string;
     email?: string;
     phone?: string;
@@ -19,6 +20,7 @@ export const SupplierModel = {
     data: Partial<{
       supplierCode: string;
       supplierName: string;
+      country: string;
       contactName: string;
       email: string;
       phone: string;

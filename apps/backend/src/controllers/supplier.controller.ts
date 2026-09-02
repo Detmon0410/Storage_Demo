@@ -13,19 +13,20 @@ export const getSupplier = asyncHandler(async (req, res) => {
 });
 
 export const createSupplier = asyncHandler(async (req, res) => {
-  const { supplierCode, supplierName, contactName, email, phone, status } = req.body;
+  const { supplierCode, supplierName, country, contactName, email, phone, status } = req.body;
   if (!supplierCode || !supplierName) {
     throw new HttpError(400, "supplierCode and supplierName are required");
   }
-  res.status(201).json(await SupplierModel.create({ supplierCode, supplierName, contactName, email, phone, status }));
+  res.status(201).json(await SupplierModel.create({ supplierCode, supplierName, country, contactName, email, phone, status }));
 });
 
 export const updateSupplier = asyncHandler(async (req, res) => {
-  const { supplierCode, supplierName, contactName, email, phone, status } = req.body;
+  const { supplierCode, supplierName, country, contactName, email, phone, status } = req.body;
   res.json(
     await SupplierModel.update(Number(req.params.id), {
       supplierCode,
       supplierName,
+      country,
       contactName,
       email,
       phone,
