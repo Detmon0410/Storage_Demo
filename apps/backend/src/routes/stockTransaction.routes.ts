@@ -11,5 +11,5 @@ export const stockTransactionRoutes = Router();
 
 stockTransactionRoutes.get("/", requireAuth, listStockTransactions);
 stockTransactionRoutes.get("/:id", requireAuth, getStockTransaction);
-stockTransactionRoutes.post("/", createStockTransaction);
+stockTransactionRoutes.post("/", requireAuth, createStockTransaction);
 stockTransactionRoutes.delete("/:id", deleteStockTransaction);

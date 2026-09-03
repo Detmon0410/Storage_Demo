@@ -12,6 +12,6 @@ export const importOrderRoutes = Router();
 
 importOrderRoutes.get("/", requireAuth, listImportOrders);
 importOrderRoutes.get("/:id", requireAuth, getImportOrder);
-importOrderRoutes.post("/", createImportOrder);
-importOrderRoutes.put("/:id", updateImportOrder);
+importOrderRoutes.post("/", requireAuth, createImportOrder);
+importOrderRoutes.put("/:id", requireAuth, updateImportOrder);
 importOrderRoutes.delete("/:id", deleteImportOrder);

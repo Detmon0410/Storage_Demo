@@ -12,6 +12,6 @@ export const salesOrderRoutes = Router();
 
 salesOrderRoutes.get("/", requireAuth, listSalesOrders);
 salesOrderRoutes.get("/:id", requireAuth, getSalesOrder);
-salesOrderRoutes.post("/", createSalesOrder);
-salesOrderRoutes.put("/:id", updateSalesOrder);
+salesOrderRoutes.post("/", requireAuth, createSalesOrder);
+salesOrderRoutes.put("/:id", requireAuth, updateSalesOrder);
 salesOrderRoutes.delete("/:id", deleteSalesOrder);

@@ -12,6 +12,6 @@ export const categoryRoutes = Router();
 
 categoryRoutes.get("/", requireAuth, listCategories);
 categoryRoutes.get("/:id", requireAuth, getCategory);
-categoryRoutes.post("/", createCategory);
-categoryRoutes.put("/:id", updateCategory);
+categoryRoutes.post("/", requireAuth, createCategory);
+categoryRoutes.put("/:id", requireAuth, updateCategory);
 categoryRoutes.delete("/:id", deleteCategory);
