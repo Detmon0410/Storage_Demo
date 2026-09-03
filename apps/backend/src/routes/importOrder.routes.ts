@@ -14,4 +14,4 @@ importOrderRoutes.get("/", requireAuth, listImportOrders);
 importOrderRoutes.get("/:id", requireAuth, getImportOrder);
 importOrderRoutes.post("/", requireAuth, createImportOrder);
 importOrderRoutes.put("/:id", requireAuth, updateImportOrder);
-importOrderRoutes.delete("/:id", deleteImportOrder);
+importOrderRoutes.delete("/:id", requireAuth, deleteImportOrder);

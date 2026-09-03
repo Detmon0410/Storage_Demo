@@ -14,4 +14,4 @@ categoryRoutes.get("/", requireAuth, listCategories);
 categoryRoutes.get("/:id", requireAuth, getCategory);
 categoryRoutes.post("/", requireAuth, createCategory);
 categoryRoutes.put("/:id", requireAuth, updateCategory);
-categoryRoutes.delete("/:id", deleteCategory);
+categoryRoutes.delete("/:id", requireAuth, deleteCategory);

@@ -14,4 +14,4 @@ dashboardKpiRoutes.get("/", requireAuth, listDashboardKpis);
 dashboardKpiRoutes.get("/:id", requireAuth, getDashboardKpi);
 dashboardKpiRoutes.post("/", requireAuth, createDashboardKpi);
 dashboardKpiRoutes.put("/:id", requireAuth, updateDashboardKpi);
-dashboardKpiRoutes.delete("/:id", deleteDashboardKpi);
+dashboardKpiRoutes.delete("/:id", requireAuth, deleteDashboardKpi);
