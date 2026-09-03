@@ -3,7 +3,7 @@ phase: 01-authentication
 plan: 06
 subsystem: frontend-auth
 tags: [react, react-router, i18next, login-form, route-guard]
-status: paused-at-checkpoint
+status: complete
 
 # Dependency graph
 requires:
@@ -38,23 +38,23 @@ key-files:
 key-decisions:
   - "Exposed accessToken from AuthContextValue and used it (not user) as RequireAuth's authenticated signal — required fix flagged by the plan itself, since /api/auth/refresh's response has no user identity to repopulate `user` on page reload."
 
-requirements-completed: []
-requirements-partial: [AUTH-01, AUTH-03]
+requirements-completed: [AUTH-01, AUTH-03]
+requirements-partial: []
 
 # Metrics
-duration: ~25min (Tasks 1-2; Task 3 checkpoint pending human verification)
+duration: ~30min (Tasks 1-3, including checkpoint approval)
 completed: 2026-09-03
 ---
 
 # Phase 1 Plan 06: Login/Logout UI + Route Guard Summary
 
-**Login page, RequireAuth route guard, and Topbar logout wired to the existing AuthContext — Tasks 1-2 complete and committed; Task 3 (manual browser verification, blocking checkpoint) is pending human confirmation.**
+**Login page, RequireAuth route guard, and Topbar logout wired to the existing AuthContext — all 3 tasks complete; Task 3's manual browser verification checkpoint was approved by the user (6/6 steps passed).**
 
 ## Performance
 
-- **Duration:** ~25 min (Tasks 1-2)
-- **Completed:** 2026-09-03 (Tasks 1-2); Task 3 pending
-- **Tasks:** 2/3 (Task 3 is a blocking human-verify checkpoint)
+- **Duration:** ~30 min (Tasks 1-3, including checkpoint approval)
+- **Completed:** 2026-09-03
+- **Tasks:** 3/3
 - **Files modified:** 8 (2 created, 6 modified)
 
 ## Accomplishments
@@ -70,7 +70,7 @@ completed: 2026-09-03
 
 1. **Task 1: i18n keys, RequireAuth guard, App.tsx wiring** - `3602e57` (feat)
 2. **Task 2: LoginPage.tsx + Topbar logout entry point** - `1889c06` (feat)
-3. **Task 3: manual browser verification** - PENDING (blocking checkpoint, see below)
+3. **Task 3: manual browser verification** - APPROVED by user (blocking checkpoint, see below); no code changes, verification-only
 
 ## Files Created/Modified
 
@@ -110,29 +110,22 @@ completed: 2026-09-03
 - Pre-existing `tsc` type errors in `apps/frontend/src/i18n/locales/ja.ts` (`productCount`, `badge`, `count` key naming vs. i18next pluralization suffixes) — same 3 errors documented in `01-05-SUMMARY.md` and `deferred-items.md`, unrelated to this plan's `auth.*` additions, left untouched (out of scope per file-list and scope-boundary rule).
 - Ports 4000/5173 were occupied by dev servers running from the parent repo checkout, not this worktree — could not reuse them for Task 3 verification since they would not reflect this plan's code changes. Started this worktree's own servers on ports 4001 (backend)/5174 (frontend) instead of stopping the parent's processes (avoided a destructive action against a process not started by this session).
 
-## User Setup Required
+## Checkpoint Approval (Task 3)
 
-**Task 3 (blocking checkpoint) needs your action before this plan can be marked complete.**
+The Task 3 blocking checkpoint (manual browser verification) was approved by the user with "approved". All 6 verification steps behaved as expected:
 
-Verification servers for this worktree are already running:
-- Frontend: **http://localhost:5174/**
-- Backend: **http://localhost:4001/api** (proxied automatically by the frontend's `VITE_API_BASE_URL`)
-- Seeded credentials: `admin` / `changeme123` (confirmed working via a direct backend curl check — valid login returns 200, invalid password returns 401 with the expected error body)
+1. Visiting `/` while unauthenticated redirects to `/login` — PASSED
+2. Submitting invalid credentials shows an inline error, password field keeps focus — PASSED
+3. Submitting valid credentials (`admin` / `changeme123`) logs in and redirects to `/`, Topbar shows "admin" — PASSED
+4. Refreshing the browser (F5) while on `/` keeps the session (AUTH-03 — session persists across refresh) — PASSED
+5. Clicking "Log out" from the Topbar dropdown redirects to `/login` — PASSED
+6. Navigating directly to a protected route (e.g. `/products`) while logged out redirects to `/login` — PASSED
 
-Please verify in a browser, using **http://localhost:5174/** as the base URL (not 5173 — that port is running a different checkout):
-
-1. Open `http://localhost:5174/`. Expected: redirected to `http://localhost:5174/login`.
-2. Enter an invalid username/password and submit. Expected: inline red error "Incorrect username or password. Please try again.", password field keeps focus, username text remains.
-3. Enter `admin` / `changeme123` and submit. Expected: redirected to `/` (Dashboard), Topbar shows "admin".
-4. Refresh the page (F5) while on `/`. Expected: you remain on `/`, still logged in (AUTH-03 — session persists across refresh).
-5. Click the user badge in the Topbar, click "Log out". Expected: redirected to `/login`.
-6. Try navigating directly to `http://localhost:5174/products` while logged out. Expected: redirected to `/login`.
-
-Reply "approved" if all steps behave as expected, or describe which step failed.
+No code changes were made for Task 3 — it is verification-only. This closes out the plan's `<success_criteria>`.
 
 ## Next Phase Readiness
 
-- Blocked on Task 3 checkpoint approval. Once approved, this plan's `<success_criteria>` (login/refresh/logout fully working through the UI) will be met, and plans 01-07/08/09 (backend `requireAuth` rollout to business routes) can proceed.
+- Task 3 checkpoint approved. This plan's `<success_criteria>` (login/refresh/logout fully working through the UI) is met, and plans 01-07/08/09 (backend `requireAuth` rollout to business routes) can now proceed.
 - All 10 pre-existing business routes remain backend-unenforced (staged rollout intact) — this plan only adds the frontend UX layer, consistent with the plan's own threat model (T-01-15, accepted).
 
 ## Threat Flags
@@ -141,7 +134,7 @@ None - `RequireAuth`, `LoginPage`, and the Topbar logout entry point are all cov
 
 ---
 *Phase: 01-authentication*
-*Status: Tasks 1-2 complete, Task 3 checkpoint pending*
+*Status: Complete — all 3 tasks done, Task 3 checkpoint approved by user*
 
 ## Self-Check: PASSED
 
