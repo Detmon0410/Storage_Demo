@@ -3,7 +3,7 @@ phase: 01-authentication
 plan: 09
 subsystem: auth
 tags: [express, jwt, middleware, vitest, supertest, staged-rollout]
-status: partial — blocked at Task 3 checkpoint (human-verify)
+status: complete
 
 # Dependency graph
 requires:
@@ -12,7 +12,8 @@ requires:
 provides:
   - "Every DELETE endpoint (final unenforced method) across all 11 pre-existing route files now requires a valid Bearer access token (401 otherwise)"
   - "auth.enforcement.test.ts extended with DELETE-enforcement assertion and a full authenticated CRUD round-trip test"
-affects: [01-authentication (this is the final staged-rollout plan; closes AUTH-04 pending manual checkpoint approval)]
+  - "Full application walkthrough manually verified (8/8 steps) against the fully-enforced application — Phase 1 (Authentication) is functionally complete"
+affects: [01-authentication (this is the final staged-rollout plan; closes AUTH-04; Phase 1 complete)]
 
 # Tech tracking
 tech-stack:
@@ -43,19 +44,19 @@ key-decisions:
 requirements-completed: [AUTH-04]
 
 # Metrics
-duration: ~15min (Tasks 1-2; Task 3 pending human verification)
+duration: ~20min (Tasks 1-3, including checkpoint approval)
 completed: 2026-09-03
 ---
 
 # Phase 1 Plan 09: DELETE-Route Authentication Enforcement (Final Stage) Summary
 
-**requireAuth now gates every DELETE endpoint — completing the 3-stage rollout (GET -> POST/PUT -> DELETE) across all 11 pre-existing route files; every existing API route in the application now requires a valid authenticated session. AUTH-04 is code-complete; Task 3's blocking human-verify checkpoint is the final gate before Phase 1 closes.**
+**requireAuth now gates every DELETE endpoint — completing the 3-stage rollout (GET -> POST/PUT -> DELETE) across all 11 pre-existing route files; every existing API route in the application now requires a valid authenticated session. AUTH-04 is fully satisfied and manually verified end-to-end. Phase 1 (Authentication) is complete.**
 
 ## Performance
 
-- **Duration:** ~15 min (Tasks 1-2)
+- **Duration:** ~20 min (Tasks 1-3)
 - **Completed:** 2026-09-03
-- **Tasks:** 2/3 (Task 3 is a blocking checkpoint awaiting user verification)
+- **Tasks:** 3/3 complete
 - **Files modified:** 12 (11 route files, 1 test file)
 
 ## Accomplishments
@@ -64,6 +65,7 @@ completed: 2026-09-03
 - Confirmed `apps/backend/src/routes/index.ts` and `apps/backend/src/routes/auth.routes.ts` remain unmodified (git status shows only the 11 intended route files changed)
 - Extended `auth.enforcement.test.ts`: flipped the "unauthenticated DELETE still succeeds" assertion (from plan 01-08) to now expect 401, and added a full authenticated CRUD round-trip test (create -> read -> update -> delete) on `/api/categories`, with the delete call itself serving as cleanup
 - Full backend suite: 8 test files, 33/33 tests passing, zero regressions from plans 01-01 through 01-09
+- Task 3 (blocking human-verify checkpoint) completed: user manually walked through all 8 verification steps against the merged application (login redirect, successful login, all 10 business pages load with no 401s, create/edit/delete category all succeed via UI, logout redirect, curl without auth header returns 401, automated suite 33/33 passing) and replied "approved" — no regressions found
 
 ## Task Commits
 
@@ -71,7 +73,7 @@ Each completed task was committed atomically:
 
 1. **Task 1: Apply requireAuth to every DELETE route across all 11 route files** - `8ea2e43` (feat)
 2. **Task 2: Complete auth.enforcement.test.ts (DELETE enforcement) + full regression suite** - `83e5933` (test)
-3. **Task 3: Final phase verification checkpoint** - NOT STARTED (blocking human-verify, requires manual browser + curl walkthrough)
+3. **Task 3: Final phase verification checkpoint** - human-verify checkpoint, no code changes; user approved all 8 manual verification steps (no commit — verification-only task)
 
 ## Files Created/Modified
 - `apps/backend/src/routes/category.routes.ts` - `requireAuth` on DELETE (now fully enforced: GET/POST/PUT/DELETE all gated)
@@ -110,14 +112,28 @@ None beyond the test-authoring bug documented above (fixed before commit). Fresh
 
 ## User Setup Required
 
-None for Tasks 1-2. **Task 3 requires manual verification** — see Checkpoint section below.
+None. Task 3's manual verification was completed by the user directly against the running dev app.
+
+## Checkpoint: Task 3 Final Phase Verification — APPROVED
+
+User ran the full application walkthrough against the merged application build and confirmed all 8 steps in the plan's `<how-to-verify>` passed:
+
+1. `pnpm dev` started both servers; visiting `http://localhost:5173/` redirected to `/login` as expected.
+2. Successful login with seeded credentials.
+3. All 10 business pages loaded without error and with no 401s: Dashboard, Import Orders, Suppliers, Products, Categories, Inventory Lots, Stock Transactions, Licenses, Customers, Sales Orders.
+4. On the Categories page: create, edit, and delete all succeeded via the UI — confirms POST/PUT/DELETE all work correctly while authenticated.
+5. Logout via the Topbar correctly redirected back to `/login`.
+6. `curl -i http://localhost:4000/api/categories` with no Authorization header returned `401`.
+7. `pnpm --filter backend exec vitest run` confirmed green: 8 test files, 33/33 tests passing.
+
+User response: **"approved"**. No regressions found; no follow-up action required.
 
 ## Next Phase Readiness
-- Every method (GET/POST/PUT/DELETE) on every route across all 11 pre-existing business route files now requires a valid Bearer access token — AUTH-04 is code-complete.
-- `pnpm --filter backend exec vitest run` passes 33/33 across all 8 test files (covering AUTH-01 through AUTH-07 behaviors), confirmed via Task 2's full-suite run.
-- T-01-20 (Elevation of Privilege on DELETE endpoints) is now mitigated per this plan's threat model.
-- T-01-21 (staged-rollout gap) is closed — this plan lands the final stage within the same phase execution, no shipped intermediate state.
-- **Phase 1 completion is gated on Task 3's blocking human-verify checkpoint** — full application walkthrough (login, all 10 pages load, category CRUD via UI, logout, curl 401 check) must be manually confirmed before the phase can be marked complete.
+- Every method (GET/POST/PUT/DELETE) on every route across all 11 pre-existing business route files now requires a valid Bearer access token — AUTH-04 is fully satisfied (code-complete and manually verified).
+- `pnpm --filter backend exec vitest run` passes 33/33 across all 8 test files (covering AUTH-01 through AUTH-07 behaviors), confirmed via both Task 2's automated run and re-confirmed during Task 3 finalization.
+- T-01-20 (Elevation of Privilege on DELETE endpoints) is mitigated per this plan's threat model.
+- T-01-21 (staged-rollout gap) is closed — this plan landed the final stage within the same phase execution; no shipped intermediate state.
+- **Phase 1 (Authentication) is functionally complete.** Every pre-existing route in the application (all 11 route files, all HTTP methods) now requires a valid authenticated session; login/logout UI is live and wired to the frontend; the phase's core value statement — "no anonymous access to business data" — is satisfied and confirmed via both automated tests and full manual walkthrough.
 
 ## Threat Flags
 
@@ -125,7 +141,7 @@ None - all new surface (requireAuth applied to DELETE routes across 11 files) wa
 
 ---
 *Phase: 01-authentication*
-*Status: Tasks 1-2 complete; Task 3 (blocking checkpoint) awaiting user verification*
+*Status: Complete — all 3 tasks done, Task 3 checkpoint approved by user. Phase 1 (Authentication) is complete.*
 
 ## Self-Check: PASSED
 
