@@ -7,6 +7,16 @@ export const ja: TranslationSchema = {
     version: "バージョン 2.0・デモビルド",
     user: "システムユーザー",
   },
+  auth: {
+    loginButton: "ログイン",
+    heading: "{{appName}}にサインイン",
+    usernameLabel: "ユーザー名",
+    passwordLabel: "パスワード",
+    invalidCredentials: "ユーザー名またはパスワードが正しくありません。もう一度お試しください。",
+    rateLimited: "ログイン試行回数が多すぎます。しばらくしてから再度お試しください。",
+    sessionExpired: "セッションの有効期限が切れました。再度ログインしてください。",
+    logoutButton: "ログアウト",
+  },
   nav: {
     group: {
       overview: "概要",
