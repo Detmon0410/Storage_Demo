@@ -12,6 +12,6 @@ export const dashboardKpiRoutes = Router();
 
 dashboardKpiRoutes.get("/", requireAuth, listDashboardKpis);
 dashboardKpiRoutes.get("/:id", requireAuth, getDashboardKpi);
-dashboardKpiRoutes.post("/", createDashboardKpi);
-dashboardKpiRoutes.put("/:id", updateDashboardKpi);
+dashboardKpiRoutes.post("/", requireAuth, createDashboardKpi);
+dashboardKpiRoutes.put("/:id", requireAuth, updateDashboardKpi);
 dashboardKpiRoutes.delete("/:id", deleteDashboardKpi);

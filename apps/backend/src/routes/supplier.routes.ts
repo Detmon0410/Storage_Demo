@@ -12,6 +12,6 @@ export const supplierRoutes = Router();
 
 supplierRoutes.get("/", requireAuth, listSuppliers);
 supplierRoutes.get("/:id", requireAuth, getSupplier);
-supplierRoutes.post("/", createSupplier);
-supplierRoutes.put("/:id", updateSupplier);
+supplierRoutes.post("/", requireAuth, createSupplier);
+supplierRoutes.put("/:id", requireAuth, updateSupplier);
 supplierRoutes.delete("/:id", deleteSupplier);

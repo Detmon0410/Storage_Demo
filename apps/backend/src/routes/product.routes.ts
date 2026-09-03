@@ -12,6 +12,6 @@ export const productRoutes = Router();
 
 productRoutes.get("/", requireAuth, listProducts);
 productRoutes.get("/:id", requireAuth, getProduct);
-productRoutes.post("/", createProduct);
-productRoutes.put("/:id", updateProduct);
+productRoutes.post("/", requireAuth, createProduct);
+productRoutes.put("/:id", requireAuth, updateProduct);
 productRoutes.delete("/:id", deleteProduct);

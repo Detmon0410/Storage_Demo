@@ -12,6 +12,6 @@ export const customerRoutes = Router();
 
 customerRoutes.get("/", requireAuth, listCustomers);
 customerRoutes.get("/:id", requireAuth, getCustomer);
-customerRoutes.post("/", createCustomer);
-customerRoutes.put("/:id", updateCustomer);
+customerRoutes.post("/", requireAuth, createCustomer);
+customerRoutes.put("/:id", requireAuth, updateCustomer);
 customerRoutes.delete("/:id", deleteCustomer);

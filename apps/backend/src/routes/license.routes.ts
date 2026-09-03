@@ -12,6 +12,6 @@ export const licenseRoutes = Router();
 
 licenseRoutes.get("/", requireAuth, listLicenses);
 licenseRoutes.get("/:id", requireAuth, getLicense);
-licenseRoutes.post("/", createLicense);
-licenseRoutes.put("/:id", updateLicense);
+licenseRoutes.post("/", requireAuth, createLicense);
+licenseRoutes.put("/:id", requireAuth, updateLicense);
 licenseRoutes.delete("/:id", deleteLicense);
