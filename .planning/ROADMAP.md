@@ -31,7 +31,18 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A logged-in user's session survives a browser refresh without re-entering credentials
   4. Every existing API route rejects requests with no valid session (401), and passwords are never stored or logged in plaintext
   5. Repeated failed login attempts from the same account/origin are throttled, and only the known frontend origin(s) can call the API (CORS restricted)
-**Plans**: TBD
+**Plans**: 9 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Backend schema (User/RefreshToken), dependencies, seed bootstrap (D-05)
+- [ ] 01-02-PLAN.md — Test infra (vitest/supertest) + JWT/refresh-token/user model core (TDD)
+- [ ] 01-03-PLAN.md — requireAuth middleware + CORS/cookieParser wiring (D-09, AUTH-07)
+- [ ] 01-04-PLAN.md — Login/refresh/logout endpoints + rate limiting (AUTH-01/02/03/06)
+- [ ] 01-05-PLAN.md — Frontend AuthContext + API client wiring (D-08 stage 2)
+- [ ] 01-06-PLAN.md — Login page, route guard, App/Topbar wiring (checkpoint)
+- [ ] 01-07-PLAN.md — Enforce auth on read endpoints (D-08 stage 3)
+- [ ] 01-08-PLAN.md — Enforce auth on write endpoints (D-08 stage 4)
+- [ ] 01-09-PLAN.md — Enforce auth on destructive endpoints + final verification (D-08 stage 5, checkpoint)
 
 ### Phase 2: RBAC & Audit Logging
 **Goal**: Every mutating action is gated by a real permission check and recorded for accountability
@@ -99,7 +110,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Authentication | 0/TBD | Not started | - |
+| 1. Authentication | 0/9 | Not started | - |
 | 2. RBAC & Audit Logging | 0/TBD | Not started | - |
 | 3. Backend Enforcement & Lot/Batch Stock Control | 0/TBD | Not started | - |
 | 4. Approval Workflow | 0/TBD | Not started | - |
