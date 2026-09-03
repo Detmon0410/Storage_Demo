@@ -10,11 +10,26 @@ export class ApiError extends Error {
   }
 }
 
+let currentAccessToken: string | null = null;
+let unauthorizedHandler: (() => void) | null = null;
+
+export function setAccessToken(token: string | null) {
+  currentAccessToken = token;
+}
+
+export function setUnauthorizedHandler(handler: (() => void) | null) {
+  unauthorizedHandler = handler;
+}
+
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${BASE_URL}${path}`, {
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(currentAccessToken ? { Authorization: `Bearer ${currentAccessToken}` } : {}),
+      },
+      credentials: "include",
       ...init,
     });
   } catch {
@@ -27,6 +42,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const data = text ? JSON.parse(text) : undefined;
 
   if (!res.ok) {
+    if (res.status === 401) unauthorizedHandler?.();
     const message = (data && (data.message || data.error)) || i18n.t("common.httpError", { status: res.status });
     throw new ApiError(res.status, message);
   }
