@@ -5,6 +5,16 @@ export const en = {
     version: "Version 2.0 · Demo build",
     user: "System User",
   },
+  auth: {
+    loginButton: "Log in",
+    heading: "Sign in to {{appName}}",
+    usernameLabel: "Username",
+    passwordLabel: "Password",
+    invalidCredentials: "Incorrect username or password. Please try again.",
+    rateLimited: "Too many login attempts. Please wait a few minutes and try again.",
+    sessionExpired: "Your session has expired. Please log in again.",
+    logoutButton: "Log out",
+  },
   nav: {
     group: {
       overview: "Overview",

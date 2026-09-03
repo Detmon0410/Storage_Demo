@@ -10,6 +10,7 @@ interface AuthUser {
 
 interface AuthContextValue {
   user: AuthUser | null;
+  accessToken: string | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -43,7 +44,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then(({ accessToken: token }) => {
         if (cancelled) return;
-        applyToken(token, user); // user identity not returned by /refresh; re-set on next login, or left null until first /auth/login this session
+        // /refresh does not return user identity, so `user` stays null after a silent
+        // refresh (e.g. on page reload). RequireAuth must treat a non-null accessToken
+        // as the authenticated signal, not `user !== null` — see AUTH context value below.
+        applyToken(token, null);
       })
       .catch(() => {
         if (!cancelled) clearSession();
@@ -85,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [accessToken, clearSession]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, accessToken, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
