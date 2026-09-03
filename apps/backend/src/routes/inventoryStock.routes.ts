@@ -6,11 +6,12 @@ import {
   listInventoryStocks,
   updateInventoryStock,
 } from "../controllers/inventoryStock.controller.js";
+import { requireAuth } from "../middleware/auth.js";
 
 export const inventoryStockRoutes = Router();
 
-inventoryStockRoutes.get("/", listInventoryStocks);
-inventoryStockRoutes.get("/:id", getInventoryStock);
+inventoryStockRoutes.get("/", requireAuth, listInventoryStocks);
+inventoryStockRoutes.get("/:id", requireAuth, getInventoryStock);
 inventoryStockRoutes.post("/", createInventoryStock);
 inventoryStockRoutes.put("/:id", updateInventoryStock);
 inventoryStockRoutes.delete("/:id", deleteInventoryStock);
