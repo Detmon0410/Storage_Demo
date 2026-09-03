@@ -54,7 +54,23 @@ Plans:
   3. Revoking a user's role takes effect on their very next request, without requiring the user to log in again
   4. Every create/update/delete, plus login, logout, approve, reject, and export actions, are recorded with user, timestamp, entity, and before/after values
   5. No screen or API endpoint can edit or delete an audit log entry, and an authorized user can filter audit history by entity, user, action, and date range
-**Plans**: TBD
+**Plans**: 14 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — RBAC + audit schema, `prisma db push`, seed 6 roles/~45 permissions/matrix (RBAC-01)
+- [ ] 02-02-PLAN.md — requirePermission middleware + role.model.ts + category read-permission pilot (RBAC-03/04/06)
+- [ ] 02-03-PLAN.md — AuditLogModel.record utility, atomic tx-wrap, category audit + login/logout audit (AUDIT-01/02)
+- [ ] 02-04-PLAN.md — Injectable-tx-client refactor: importOrder/salesOrder/stockTransaction/customerLicense models (AUDIT-01)
+- [ ] 02-05-PLAN.md — Read-permission wiring batch A: customer/customerLicense/dashboardKpi/license/supplier (RBAC-04)
+- [ ] 02-06-PLAN.md — Read-permission wiring batch B: product/inventoryStock/importOrder/salesOrder/stockTransaction (RBAC-04)
+- [ ] 02-07-PLAN.md — Audit log query endpoint (GET-only, filterable) (AUDIT-03/04)
+- [ ] 02-08-PLAN.md — Write-permission + audit wrap batch A: customer/customerLicense/dashboardKpi/license/supplier (RBAC-04/AUDIT-01)
+- [ ] 02-09-PLAN.md — Write-permission + audit wrap batch B: product/inventoryStock/stockTransaction (RBAC-04/AUDIT-01)
+- [ ] 02-10-PLAN.md — Order write+audit, approve/reject endpoints, no-self-approval, restrict generic PUT (RBAC-04/AUDIT-01/02)
+- [ ] 02-11-PLAN.md — User management backend: CRUD, role assignment, self-lockout guard (RBAC-02/05)
+- [ ] 02-12-PLAN.md — GET /api/auth/me + AuthContext roles/permissions + nav gating (RBAC-03/06)
+- [ ] 02-13-PLAN.md — Users page (multi-role checkboxes, deactivate/reactivate) + checkpoint (RBAC-05)
+- [ ] 02-14-PLAN.md — Audit Log viewer page (filters + detail modal) + checkpoint (AUDIT-04)
 
 ### Phase 3: Backend Enforcement & Lot/Batch Stock Control
 **Goal**: Invalid business actions (expired license, overselling, uncontrolled credit/discount) are rejected at the backend regardless of caller
@@ -110,10 +126,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Authentication | 0/9 | Not started | - |
-| 2. RBAC & Audit Logging | 0/TBD | Not started | - |
+| 1. Authentication | 9/9 | Complete | 2026-09-03 |
+| 2. RBAC & Audit Logging | 0/14 | Not started | - |
 | 3. Backend Enforcement & Lot/Batch Stock Control | 0/TBD | Not started | - |
 | 4. Approval Workflow | 0/TBD | Not started | - |
 | 5. Liquor Tax & Compliance Data | 0/TBD | Not started | - |
 | 6. Documents & Reporting | 0/TBD | Not started | - |
-</content>
