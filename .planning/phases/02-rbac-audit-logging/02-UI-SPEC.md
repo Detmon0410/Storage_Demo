@@ -20,7 +20,7 @@ created: 2026-09-03
 | Tool | none (same hand-rolled Tailwind v4 component set from `apps/frontend/src/components/ui/`, established in Phase 1) |
 | Preset | not applicable |
 | Component library | none (reuse existing primitives: `Button`, `Field`/`TextInput`/`SelectField`/`CheckboxField`, `FormGrid`, `Card`, `Badge`, `DataTable`, `Modal`, `ConfirmDialog`, `PageHeader`, `SearchInput`, `States` (`LoadingState`/`ErrorState`/`EmptyState`), `Toast`) |
-| Icon library | `lucide-react` (existing dependency) — new icons needed for this phase: `UserCog` (Users nav item — `Users` is already used by the Customers nav entry, so a distinct icon avoids sidebar ambiguity), `ScrollText` (Audit Log nav item), `ShieldCheck` (role badges, optional inline use), `RotateCcw` (reactivate action) |
+| Icon library | `lucide-react` (existing dependency) — new icons needed for this phase: `UserCog` (Users nav item — `Users` is already used by the Customers nav entry, so a distinct icon avoids sidebar ambiguity), `ScrollText` (Audit Log nav item), `ShieldCheck` (role badges, optional inline use), `RotateCcw` (reactivate action), `Eye` (audit log "View details" row action) |
 | Font | `"Segoe UI", "Noto Sans Thai", system-ui, -apple-system, sans-serif` (unchanged, `--font-sans` in `apps/frontend/src/index.css`) |
 
 **Decision rationale:** Per CONTEXT.md D-03, this phase explicitly reuses the existing CRUD table+modal pattern (Suppliers/Products/Customers) with no new component library and no new visual language. No `components.json` exists in this repo (confirmed absent again for this phase); Phase 1 already made the "no shadcn, extend the hand-rolled system" call and nothing about this phase's two screens changes that calculus. Proceeding without re-asking the shadcn question, consistent with `01-UI-SPEC.md`'s precedent.
@@ -58,7 +58,7 @@ Unchanged from Phase 1 — no new sizes or weights introduced:
 | Heading | 20px (`text-xl`) | 600 (semibold) | 1.2 |
 | Display | 24px (`text-2xl`) | 600 (semibold) | 1.2 — not used in this phase (no marketing/hero text on admin screens) |
 
-Exactly 4 sizes / 2 weights, matching the existing `PageHeader` (`text-xl font-semibold` title, `text-sm` subtitle), `DataTable` (`text-xs font-semibold uppercase` header, `text-sm` body cell), and `Field` (`text-xs font-medium` label) conventions. Role names and permission-matrix labels use `text-sm font-medium` (existing `font-medium` = 500 weight is already used project-wide for table primary-column emphasis, e.g. `SuppliersPage`'s `font-medium text-slate-900` name cell — carried forward here for the user row's display-name cell and role-chip text, consistent with existing pages, not a new weight introduced by this phase).
+Exactly 4 sizes / 2 weights, matching the existing `PageHeader` (`text-xl font-semibold` title, `text-sm` subtitle) and `DataTable` (`text-xs font-semibold uppercase` header, `text-sm` body cell) conventions. Role names, permission-matrix labels, and the user row's display-name cell use `text-sm font-semibold` (600) rather than `font-medium` (500) — this phase does not introduce a third weight; where Phase 1 pages historically used `font-medium` for primary-column emphasis (e.g. `SuppliersPage`'s name cell), this phase's new UI (role chips, permission matrix, user display-name cell) instead reuses the declared `font-semibold` (600) to keep strictly within the 2-weight budget. `Field`'s `text-xs font-medium` label styling is pre-existing Phase 1 component chrome, not new surface introduced by this phase, and is out of scope for this revision.
 
 ---
 
@@ -102,7 +102,8 @@ Copy delivered via `i18next` under new `user.*` and `audit.*` namespaces (matchi
 | Element | Copy |
 |---------|------|
 | Primary CTA (Users page) | "Add user" (`user.add`) — opens create modal, matches existing `supplier.add`/`product.add` pattern |
-| Primary CTA (User modal submit) | "Save" (`common.save`, reused as-is) |
+| Primary CTA (User modal submit — create) | "Create user" (`user.modalCreateSubmit`) — mode-specific, action+noun label mirroring the already-differentiated modal titles "Add user"/"Edit user"; deliberately not "Save" (generic-label blocklist term) |
+| Primary CTA (User modal submit — edit) | "Save changes" (`user.modalEditSubmit`) — mode-specific, distinct from the create-mode label so the button text always confirms which action is about to happen |
 | Primary CTA (Audit Log page) | none — this is a read-only viewer, no create action. `PageHeader`'s `actions` slot is empty/omitted for this page. |
 | Page title (Users) | "Users" (`user.title`) |
 | Page subtitle (Users) | "Manage system users and their assigned roles" (`user.subtitle`) |
@@ -130,7 +131,9 @@ Copy delivered via `i18next` under new `user.*` and `audit.*` namespaces (matchi
 | Audit filter — user | Label "User" (`audit.filter.user`) — `SelectField` populated from the user list, plus "All users" default |
 | Audit filter — action | Label "Action" (`audit.filter.action`) — `SelectField` with Create/Update/Delete/Login/Logout/Approve/Reject/Export, plus "All actions" default |
 | Audit filter — date range | Label "Date range" (`audit.filter.dateRange`) — two `TextInput type="date"` fields side by side (from/to), matching existing `TextInput` styling; no new date-range picker component introduced |
-| Audit table — before/after values | Not shown inline in the table row (would break row-height consistency with other tables). A "View details" ghost icon-button (existing `Button variant="ghost" size="sm"` pattern, `Eye` icon... actually use existing icon set) opens a read-only `Modal` showing entity, action, user, timestamp, and formatted before/after JSON in two side-by-side `<pre>` blocks styled with the existing `font-mono text-xs` convention (already used for `supplierCode` display) |
+| Audit table — before/after values | Not shown inline in the table row (would break row-height consistency with other tables). A "View details" ghost icon-button (existing `Button variant="ghost" size="sm"` pattern, `Eye` icon from `lucide-react` — see Design System icon list) opens a read-only `Modal` showing entity, action, user, timestamp, and formatted before/after JSON in two side-by-side `<pre>` blocks styled with the existing `font-mono text-xs` convention (already used for `supplierCode` display) |
+
+**Icon-only action labeling (applies to every icon-only button in this phase):** every icon-only `Button` — the edit pencil, the deactivate/reactivate toggle (`Ban`/`RotateCcw` or `UserX`/`UserCheck`), and the audit log "View details" `Eye` button — must carry an explicit `aria-label` that states the action in words (e.g. `aria-label="Edit {{username}}"`, `aria-label="Deactivate {{username}}"`, `aria-label="View details"`), matching the label text used in its corresponding tooltip/confirm dialog. This is a hard requirement, not a nice-to-have: none of these rows have adjacent visible text identifying the action, so screen-reader and tooltip parity depends entirely on the `aria-label`.
 
 ---
 
@@ -157,12 +160,14 @@ Not part of the template's core sections but required for executor clarity given
 - In the Users table (list view), render assigned roles as wrapped `Badge` chips (per Color section above) in a dedicated "Roles" column — do not truncate to "+N more"; wrap the row height instead (`DataTable` already supports variable row height via its existing `align-middle` cell styling).
 
 **Users page layout (mirrors SuppliersPage.tsx exactly):**
+- Visual hierarchy: the eye is drawn first to the "Add user" button (sole amber-accent element in the header), then down the Username column (the only `font-semibold` text in the table body), then across each row's Roles badge cluster and Status badge before reaching the trailing icon actions — the same primary→secondary→tertiary scan path as the existing Suppliers/Products tables.
 - `PageHeader` with `filters={<SearchInput .../>}` (search by username) and `actions={<Button variant="primary" icon={<Plus/>}>Add user</Button>}`.
 - `DataTable` columns: Username, Roles (badge row), Status (badge), Actions (edit pencil + deactivate/reactivate toggle icon — `Trash2` is NOT used here since this is not a delete operation; use `UserX`/`UserCheck` or `Ban`/`RotateCcw` icon pairs to visually distinguish deactivate-vs-delete semantics from Suppliers/Products' hard-delete pattern).
 - Create/Edit `Modal` at `width="max-w-lg"` (default, no need for Product's wider `max-w-2xl` — fewer fields than Product).
 - No password field on edit (only shown on create) — editing a user's password is out of scope for this phase's screen (not listed in D-03's create/edit/deactivate/reactivate scope); a future "reset password" action is not part of this contract.
 
 **Audit Log page layout (new pattern, not a 1:1 copy of the CRUD pages since it has no create/edit/delete actions):**
+- Visual hierarchy: with no primary CTA to anchor the header, the eye is drawn first to the filter bar (the only interactive control cluster at the top of the page), then down the Timestamp column (newest-first, left-most, so recency is immediately scannable), then to each row's Action badge (the color-coded tone draws attention before the plain-text Entity/User columns), with the "View details" icon remaining visually last/quietest per row.
 - `PageHeader` title "Audit Log", subtitle as above, `filters` slot contains 4 controls in a row (Entity select, User select, Action select, Date-range pair) using the same `flex flex-wrap gap-2` wrapping the existing `PageHeader` filters slot already provides — no `actions` slot content (omit the `actions` prop entirely, do not pass an empty node).
 - Filters apply live (on-change, debounced client-side filter of already-fetched rows) if the expected data volume is small enough for one page-load fetch; if audit volume requires server-side pagination/filtering (a research-phase decision, not a UI-SPEC decision), the same visual filter bar applies — only the data-fetching trigger (live vs. an explicit "Apply" button) changes. Default to live client-side filtering unless RESEARCH.md for this phase says otherwise; if server-side filtering is chosen, add an explicit "Apply filters" `Button variant="secondary" size="sm"` at the end of the filter row (accent-colored per the Color section) rather than silently refetching on every keystroke.
 - `DataTable` columns: Timestamp, User, Action (badge), Entity, Entity ID, Details (ghost "View details" button opening the before/after modal described in Copywriting).
