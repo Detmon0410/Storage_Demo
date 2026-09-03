@@ -500,7 +500,11 @@ async function main() {
     await prisma.user.create({
       data: { username: adminUsername, passwordHash, status: "ACTIVE" },
     });
-    console.log(`Seeded default System Admin user "${adminUsername}" (password: ${adminPassword} — change in production via ADMIN_DEFAULT_PASSWORD env var)`);
+    if (process.env.ADMIN_DEFAULT_PASSWORD) {
+      console.log(`Seeded default System Admin user "${adminUsername}" (password set via ADMIN_DEFAULT_PASSWORD)`);
+    } else {
+      console.log(`Seeded default System Admin user "${adminUsername}" (password: ${adminPassword} — set ADMIN_DEFAULT_PASSWORD env var in production)`);
+    }
   } else {
     console.log(`System Admin user "${adminUsername}" already exists, skipping`);
   }

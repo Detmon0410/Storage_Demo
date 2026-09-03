@@ -1,5 +1,9 @@
 import jwt from "jsonwebtoken";
 
+if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET must be set in production — refusing to start with a guessable default secret");
+}
+
 const JWT_SECRET = process.env.JWT_SECRET ?? "dev-only-change-me-in-production-please-32chars-min";
 const JWT_ACCESS_TOKEN_TTL = process.env.JWT_ACCESS_TOKEN_TTL ?? "15m";
 
