@@ -1,7 +1,7 @@
 ---
 phase: 1
 slug: 01-authentication
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-09-03
@@ -52,11 +52,11 @@ Matches existing scale observed in `PageHeader.tsx`, `Field.tsx`, `Topbar.tsx` �
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
 | Body | 14px (`text-sm`) | 400 (regular) | 1.5 |
-| Label | 12px (`text-xs`) | 500 (medium) | 1.5 |
+| Label | 12px (`text-xs`) | 400 (regular) | 1.5 |
 | Heading | 20px (`text-xl`) | 600 (semibold) | 1.2 |
 | Display | 24px (`text-2xl`) | 600 (semibold) | 1.2 — used only for the login screen's app name/title above the form, matching `app.name` branding weight |
 
-Only 4 sizes / 2 weights (400, 500/600 collapse to "regular" and "semibold" per contract — existing codebase already uses `font-medium`/`font-semibold` interchangeably at label/heading scale, which is accepted here as the single "semibold" bucket).
+Exactly 4 sizes / 2 weights: 400 (regular, used for Body and Label) and 600 (semibold, used for Heading and Display). No other weight values are used anywhere in this phase's UI — `font-medium` (500) is not used on the login/logout screens.
 
 ---
 
@@ -72,6 +72,8 @@ Matches existing Tailwind palette usage (slate neutrals, amber accent, rose dest
 | Destructive | `rose-600` (#e11d48) / `rose-500` for text | Login error message text/border only (invalid credentials, rate-limit exceeded), logout confirmation if a confirm step is added |
 
 Accent reserved for: the primary "Log in" submit button, input focus rings on the login form, and the post-login user-avatar badge in `Topbar`. Never used for body text, borders, or secondary actions.
+
+**Visual anchor:** On the login screen, the `Card` containing the form plus the primary amber "Log in" button is the focal point — the app name/heading above the card is secondary, providing context but not competing for attention (smaller visual weight via spacing, not color).
 
 ---
 
@@ -119,11 +121,11 @@ Not part of the template's core sections but required for executor clarity given
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: PASS
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
 
-**Approval:** pending
+**Approval:** approved 2026-09-03
