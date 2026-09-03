@@ -680,17 +680,19 @@ Note: `AuditLogModel.record` should accept either `PrismaClient` or `Prisma.Tran
 
 **If this table is empty:** N/A — see rows above.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should `requirePermission("AUDIT_LOG_VIEW")` be a real permission-code row assigned to `SYSTEM_ADMIN` and `MANAGER_APPROVER` in `role_permissions`, or should audit-log access be a hardcoded role-code check (`req.userId`'s roles include `SYSTEM_ADMIN` or `MANAGER_APPROVER`) bypassing the permission table entirely?**
    - What we know: D-04 specifies binary access by role, not by a granular permission — this reads more like a role check than a permission check.
    - What's unclear: Whether introducing one hardcoded role-name check breaks the "everything flows through `requirePermission`" consistency this phase otherwise establishes.
    - Recommendation: Model it as a permission code (`AUDIT_LOG_VIEW`) assigned only to those two roles in the seed data — keeps `requirePermission` as the single enforcement mechanism everywhere, with no special-cased role-name check anywhere in the codebase, and if D-04's "Own/Related" scoping is added in a future phase, the permission-table approach extends cleanly (e.g., add `AUDIT_LOG_VIEW_OWN` for other roles later) without touching the middleware.
+   - **RESOLVED:** Implemented exactly as recommended. Plan 02-01 seeds `AUDIT_LOG_VIEW` as a permission code assigned only to `SYSTEM_ADMIN`/`MANAGER_APPROVER`; plan 02-07 gates the audit log route with `requirePermission("AUDIT_LOG_VIEW")`. No hardcoded role-name check introduced.
 
 2. **Exact permission-code list (40-60 codes across ~19 modules) — this research proposes the shape but not the final enumerated list.**
    - What we know: The role doc §7 matrix gives module × role → access-level pairs (V/C/E/A/X/-), which maps naturally to codes like `{MODULE}_{VIEW|CREATE|EDIT|APPROVE}` and `{MODULE}_FULL` for admin-only modules (User Management, Role Management).
    - What's unclear: Some matrix cells combine multiple access levels in one cell (e.g., "V/A" for Import Order under Manager) — whether that means two separate permission codes (`IMPORT_ORDER_VIEW` + `IMPORT_ORDER_APPROVE`) both assigned to that role, or a single combined code.
    - Recommendation: Always split into atomic single-action codes (`IMPORT_ORDER_VIEW`, `IMPORT_ORDER_APPROVE` as two separate rows, both assigned to `MANAGER_APPROVER`) — this is more flexible for future per-action permission changes and matches D-02's stated granularity ("module + action level"). The planner should enumerate the full list as an explicit Wave 1 seed-data task, deriving it mechanically from the §7 matrix rather than this research attempting to write all ~50 rows by hand (high risk of transcription error against the source document).
+   - **RESOLVED:** Plan 02-01 Task 3 contains the full 45-code enumerated list, split into atomic single-action codes per the recommendation.
 
 ## Environment Availability
 
