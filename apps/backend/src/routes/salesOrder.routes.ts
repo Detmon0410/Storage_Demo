@@ -14,4 +14,4 @@ salesOrderRoutes.get("/", requireAuth, listSalesOrders);
 salesOrderRoutes.get("/:id", requireAuth, getSalesOrder);
 salesOrderRoutes.post("/", requireAuth, createSalesOrder);
 salesOrderRoutes.put("/:id", requireAuth, updateSalesOrder);
-salesOrderRoutes.delete("/:id", deleteSalesOrder);
+salesOrderRoutes.delete("/:id", requireAuth, deleteSalesOrder);

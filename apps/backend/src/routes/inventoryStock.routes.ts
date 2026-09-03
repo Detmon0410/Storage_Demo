@@ -14,4 +14,4 @@ inventoryStockRoutes.get("/", requireAuth, listInventoryStocks);
 inventoryStockRoutes.get("/:id", requireAuth, getInventoryStock);
 inventoryStockRoutes.post("/", requireAuth, createInventoryStock);
 inventoryStockRoutes.put("/:id", requireAuth, updateInventoryStock);
-inventoryStockRoutes.delete("/:id", deleteInventoryStock);
+inventoryStockRoutes.delete("/:id", requireAuth, deleteInventoryStock);

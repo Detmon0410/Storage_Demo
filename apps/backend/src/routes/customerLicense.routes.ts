@@ -15,5 +15,5 @@ customerLicenseRoutes.get("/", requireAuth, listCustomerLicenses);
 customerLicenseRoutes.get("/:id", requireAuth, getCustomerLicense);
 customerLicenseRoutes.post("/", requireAuth, createCustomerLicense);
 customerLicenseRoutes.put("/:id", requireAuth, updateCustomerLicense);
-customerLicenseRoutes.delete("/:id", deleteCustomerLicense);
+customerLicenseRoutes.delete("/:id", requireAuth, deleteCustomerLicense);
 customerLicenseRoutes.post("/:id/renew", requireAuth, renewCustomerLicense);

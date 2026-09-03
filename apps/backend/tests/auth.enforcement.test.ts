@@ -61,9 +61,35 @@ describe("GET route authentication enforcement", () => {
     }
   });
 
-  it("still allows an unauthenticated DELETE /api/categories/:id at this stage (destructive enforcement lands in plan 01-09)", async () => {
+  it("returns 401 for DELETE /api/categories/:id with no Authorization header", async () => {
     const res = await request(app).delete("/api/categories/999999");
 
-    expect(res.status).not.toBe(401);
+    expect(res.status).toBe(401);
+  });
+
+  it("allows a full authenticated CRUD round-trip on /api/categories (create -> read -> update -> delete)", async () => {
+    const { username, password } = await createTestUser("enforcement_crud");
+    const loginRes = await request(app).post("/api/auth/login").send({ username, password });
+    const accessToken = loginRes.body.accessToken;
+    const auth = (req: request.Test) => req.set("Authorization", `Bearer ${accessToken}`);
+
+    const createRes = await auth(request(app).post("/api/categories")).send({
+      categoryCode: `TEST_CRUD_${Date.now()}`,
+      categoryName: "CRUD Round-trip Category",
+    });
+    expect(createRes.status).toBe(201);
+    const categoryId = createRes.body.categoryId;
+
+    const readRes = await auth(request(app).get(`/api/categories/${categoryId}`));
+    expect(readRes.status).toBe(200);
+    expect(readRes.body.categoryId).toBe(categoryId);
+
+    const updateRes = await auth(request(app).put(`/api/categories/${categoryId}`)).send({
+      categoryName: "CRUD Round-trip Category Updated",
+    });
+    expect(updateRes.status).toBe(200);
+
+    const deleteRes = await auth(request(app).delete(`/api/categories/${categoryId}`));
+    expect(deleteRes.status).toBe(204);
   });
 });
