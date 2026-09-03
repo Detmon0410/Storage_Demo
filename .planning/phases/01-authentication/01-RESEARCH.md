@@ -440,17 +440,19 @@ const loginRateLimiter = rateLimit({
 | A3 | MySQL collation for `username` may already be case-insensitive by default, but defensive lowercasing is recommended regardless | Common Pitfalls (Pitfall 5) | Low — defensive normalization is applied either way, so this assumption doesn't block correct behavior, only explains *why* it's being applied |
 | A4 | Refresh token TTL of 7 days and access token TTL of ~12 minutes are reasonable defaults within the user's specified ranges/discretion | Code Examples, D-01/Claude's Discretion | Low — explicitly flagged as Claude's discretion in CONTEXT.md; planner/user can adjust without any architectural rework |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should `User.status` (active/inactive) be part of this phase's schema, or deferred entirely to Phase 2/RBAC?**
    - What we know: CONTEXT.md's Claude's Discretion section doesn't explicitly mention it; REQUIREMENTS.md's RBAC-05 ("System Admin can create, edit, deactivate, and reactivate users") is explicitly Phase 2.
    - What's unclear: Whether Phase 1 should ship the `status` column now (schema-only, unused by any UI) to avoid an additive migration later, or whether that's scope creep into Phase 2's territory.
    - Recommendation: Add the column now (cheap, additive, and Pitfall 3 depends on it existing for the refresh/login checks to be meaningful) but do not build any admin UI or deactivation endpoint in this phase — that stays Phase 2.
+   - **RESOLVED:** Column added in plans 01-01/01-02 — no UI, per recommendation.
 
 2. **Exact refresh-token rotation policy (rotate-on-use vs. fixed-expiry-only) — explicitly left to Claude's discretion in CONTEXT.md.**
    - What we know: A fixed-expiry (non-rotating) refresh token is simpler to implement and reason about, and is sufficient to satisfy AUTH-02/AUTH-03 as stated.
    - What's unclear: Whether rotate-on-use (issuing a new refresh token on every `/auth/refresh` call, invalidating the old one) is worth the added complexity for this phase's threat model (internal tool, not public-facing).
    - Recommendation: Ship fixed-expiry (no rotation) for Phase 1 — it fully satisfies the stated success criteria with less surface area for bugs (e.g., race conditions on concurrent refresh calls invalidating each other). Rotation can be added later without breaking the `RefreshToken` schema shape (it's additive, not a redesign).
+   - **RESOLVED:** Fixed-expiry, no rotation — implemented in plan 01-04.
 
 ## Environment Availability
 
