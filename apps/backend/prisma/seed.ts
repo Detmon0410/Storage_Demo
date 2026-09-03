@@ -1,3 +1,4 @@
+import * as argon2 from "@node-rs/argon2";
 import { CustomerLicenseStatus, PrismaClient, TransactionType } from "@prisma/client";
 import { CustomerLicenseModel } from "../src/models/customerLicense.model.js";
 import { ImportOrderModel } from "../src/models/importOrder.model.js";
@@ -491,6 +492,19 @@ const dashboardKpis = [
 ] as const;
 
 async function main() {
+  const adminUsername = "admin";
+  const adminPassword = process.env.ADMIN_DEFAULT_PASSWORD ?? "changeme123";
+  const existingAdmin = await prisma.user.findUnique({ where: { username: adminUsername } });
+  if (!existingAdmin) {
+    const passwordHash = await argon2.hash(adminPassword);
+    await prisma.user.create({
+      data: { username: adminUsername, passwordHash, status: "ACTIVE" },
+    });
+    console.log(`Seeded default System Admin user "${adminUsername}" (password: ${adminPassword} — change in production via ADMIN_DEFAULT_PASSWORD env var)`);
+  } else {
+    console.log(`System Admin user "${adminUsername}" already exists, skipping`);
+  }
+
   await prisma.$transaction([
     prisma.stockTransaction.deleteMany(),
     prisma.salesOrderItem.deleteMany(),
