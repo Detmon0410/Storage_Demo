@@ -6,11 +6,12 @@ import {
   listSalesOrders,
   updateSalesOrder,
 } from "../controllers/salesOrder.controller.js";
+import { requireAuth } from "../middleware/auth.js";
 
 export const salesOrderRoutes = Router();
 
-salesOrderRoutes.get("/", listSalesOrders);
-salesOrderRoutes.get("/:id", getSalesOrder);
+salesOrderRoutes.get("/", requireAuth, listSalesOrders);
+salesOrderRoutes.get("/:id", requireAuth, getSalesOrder);
 salesOrderRoutes.post("/", createSalesOrder);
 salesOrderRoutes.put("/:id", updateSalesOrder);
 salesOrderRoutes.delete("/:id", deleteSalesOrder);

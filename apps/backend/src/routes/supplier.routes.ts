@@ -6,11 +6,12 @@ import {
   listSuppliers,
   updateSupplier,
 } from "../controllers/supplier.controller.js";
+import { requireAuth } from "../middleware/auth.js";
 
 export const supplierRoutes = Router();
 
-supplierRoutes.get("/", listSuppliers);
-supplierRoutes.get("/:id", getSupplier);
+supplierRoutes.get("/", requireAuth, listSuppliers);
+supplierRoutes.get("/:id", requireAuth, getSupplier);
 supplierRoutes.post("/", createSupplier);
 supplierRoutes.put("/:id", updateSupplier);
 supplierRoutes.delete("/:id", deleteSupplier);

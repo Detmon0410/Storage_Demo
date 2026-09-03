@@ -7,11 +7,12 @@ import {
   renewCustomerLicense,
   updateCustomerLicense,
 } from "../controllers/customerLicense.controller.js";
+import { requireAuth } from "../middleware/auth.js";
 
 export const customerLicenseRoutes = Router();
 
-customerLicenseRoutes.get("/", listCustomerLicenses);
-customerLicenseRoutes.get("/:id", getCustomerLicense);
+customerLicenseRoutes.get("/", requireAuth, listCustomerLicenses);
+customerLicenseRoutes.get("/:id", requireAuth, getCustomerLicense);
 customerLicenseRoutes.post("/", createCustomerLicense);
 customerLicenseRoutes.put("/:id", updateCustomerLicense);
 customerLicenseRoutes.delete("/:id", deleteCustomerLicense);

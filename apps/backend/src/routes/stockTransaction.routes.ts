@@ -5,10 +5,11 @@ import {
   getStockTransaction,
   listStockTransactions,
 } from "../controllers/stockTransaction.controller.js";
+import { requireAuth } from "../middleware/auth.js";
 
 export const stockTransactionRoutes = Router();
 
-stockTransactionRoutes.get("/", listStockTransactions);
-stockTransactionRoutes.get("/:id", getStockTransaction);
+stockTransactionRoutes.get("/", requireAuth, listStockTransactions);
+stockTransactionRoutes.get("/:id", requireAuth, getStockTransaction);
 stockTransactionRoutes.post("/", createStockTransaction);
 stockTransactionRoutes.delete("/:id", deleteStockTransaction);
