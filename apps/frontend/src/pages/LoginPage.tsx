@@ -19,12 +19,11 @@ export function LoginPage() {
 
   const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? "/";
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const signIn = async (loginUsername: string, loginPassword: string) => {
     setSubmitting(true);
     setError(null);
     try {
-      await login(username, password);
+      await login(loginUsername, loginPassword);
       navigate(from, { replace: true });
     } catch {
       setError(t("auth.invalidCredentials"));
@@ -33,6 +32,13 @@ export function LoginPage() {
       setSubmitting(false);
     }
   };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    await signIn(username, password);
+  };
+
+  const handleTestUserLogin = () => signIn("admin", "changeme123");
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
@@ -62,6 +68,20 @@ export function LoginPage() {
           </Field>
           <Button type="submit" variant="primary" className="w-full" loading={submitting}>
             {t("auth.loginButton")}
+          </Button>
+          <div className="flex items-center gap-2" aria-hidden="true">
+            <div className="h-px flex-1 bg-slate-200" />
+            <span className="text-xs text-slate-500">{t("auth.or")}</span>
+            <div className="h-px flex-1 bg-slate-200" />
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full"
+            disabled={submitting}
+            onClick={handleTestUserLogin}
+          >
+            {t("auth.continueAsTestUser")}
           </Button>
         </form>
       </Card>

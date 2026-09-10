@@ -11,6 +11,8 @@ export const en = {
     usernameLabel: "Username",
     passwordLabel: "Password",
     invalidCredentials: "Incorrect username or password. Please try again.",
+    or: "or",
+    continueAsTestUser: "Continue as test user",
     rateLimited: "Too many login attempts. Please wait a few minutes and try again.",
     sessionExpired: "Your session has expired. Please log in again.",
     logoutButton: "Log out",
