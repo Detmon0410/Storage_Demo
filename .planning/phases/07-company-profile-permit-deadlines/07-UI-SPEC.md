@@ -41,28 +41,33 @@ Declared values (must be multiples of 4):
 | 2xl | 48px | Major section breaks |
 | 3xl | 64px | Page-level spacing |
 
-Exceptions: the existing component kit uses Tailwind's half-step utilities (`px-2.5`/`py-1.5`/`gap-1.5`, i.e. 10px/6px/6px) for compact chrome — badges, small buttons, and validation-message rows (see `Badge.tsx`, `Button.tsx` `sm` size, `SalesOrdersPage.tsx` blocker rows). This is an already-established exception across the whole app, not a new one introduced by this phase — reuse it verbatim for the new License Company/Product select fields, the permit bucket badges, and the new order-blocking message rows. Do not introduce any spacing value outside this existing set.
+Exceptions: none. Every NEW element introduced by this phase conforms to the 4px grid:
+
+- **License Company/Product select fields** — reuse `SelectField`/`inputClass` (`px-3 py-2` = 12px/8px, both multiples of 4). No exception needed.
+- **New order-blocking message rows** (ImportOrdersPage) — copy the exact class structure already used by `SalesOrdersPage.tsx` blocker rows verbatim: `flex items-start gap-2 rounded-lg border ... px-3 py-2 text-xs` (gap-2 = 8px, px-3/py-2 = 12px/8px, all multiples of 4). No exception needed.
+- **Permit dashboard bucket tiles** (new, `DashboardPage.tsx`) — build as plain `div` tiles with `p-4` (16px) padding and `gap-2` (8px) internal spacing inside a `grid grid-cols-2 sm:grid-cols-5 gap-4` row. Do not use the `Badge` component's own padding for these tiles — the tile itself is a new element and must sit on-grid.
+- **Permit tier badges shown inside the License table/list row** — these reuse the existing, unchanged `Badge` component as-is (internal `px-2.5 py-1` = 10px/4px). This is a pre-existing shared component invoked unmodified by this phase, not a new spacing value introduced here, and is therefore outside this phase's spacing contract (same status as `Button` `sm` size). It is not declared as an approved exception — it is simply out of scope.
 
 ---
 
 ## Typography
 
-Reuses the exact type scale already in production (`PageHeader.tsx`, `Field.tsx`, `StatCard.tsx`) — no new sizes or weights are introduced by this phase.
+Reuses the exact type scale already in production (`PageHeader.tsx`, `Field.tsx`, `StatCard.tsx`). This phase's own type-weight budget is exactly 2 weights: Regular (400) and Semibold (600).
 
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
 | Body | 14px (`text-sm`) | 400 (regular) | 1.5 |
-| Label | 12px (`text-xs`) | 500 (medium) — existing exception, see note | 1.33 |
 | Heading | 20px (`text-xl`) | 600 (semibold) | 1.2 |
 | Display | 24px (`text-2xl`) | 600 (semibold) | 1.2 |
 
-**Weight note:** the contract's 2-weight budget is Regular (400, body copy, table cells, helper text) and Semibold (600, page headings, StatCard values, emphasis). `font-medium` (500) is an already-established exception baked into the shared `Field` label and `Badge` components used across every existing page — Phase 7 inherits it by reusing those components, it does not introduce a third weight independently.
+**Label styling note:** field labels and badge text render at 12px via the existing, unchanged `Field.tsx` (`text-xs font-medium text-slate-600`) and `Badge.tsx` (`text-xs font-medium`) components. Their internal `font-medium` (500) is pre-existing component-internal detail — those components are reused verbatim by this phase, not modified or re-specified — and is intentionally excluded from this phase's own 2-weight typography table (same treatment as the Spacing section's Badge exclusion above). Phase 7 does not introduce any new element that requires a label/caption role with independent weight control; anywhere this phase needs new label-style text (e.g. dashboard bucket tile labels), it must use Body (14px/400) or Heading (20px/600), not a third weight.
 
 Applied to this phase:
 - Company Profile page title / License page title: Heading (20px/600)
 - Permit dashboard bucket counts (mini StatCard-style): Display (24px/600)
-- Permit bucket labels, form field labels, table column headers: Label (12px/500)
+- Permit dashboard bucket tile labels: Body (14px/400) — deliberately not the pre-existing 12px/500 Label style, since this phase's new tiles must stay within the 2-weight budget
 - Form input values, table cell values, helper/error text, blocker/warning message copy: Body (14px/400)
+- Existing `Field` labels and `Badge` text on reused/unchanged components (e.g. permit tier badge in the License table row): out of scope for this phase's type contract, per the note above
 
 ---
 
@@ -111,11 +116,11 @@ This is the single most important visual decision in this phase: 6 status codes 
 
 ## Component Inventory & Layout Notes (for planner/executor)
 
-1. **Company Profile page** (`CompanyPage.tsx`, new route e.g. `/company`): a single settings-style form, NOT a `DataTable` list. Layout: `PageHeader` (title only, no "+ Add" action, no filters) → single `Card` → `FormGrid` with `Field`/`TextInput` for Legal Name, Tax ID, Address → one `Button variant="primary"` "Save Company Profile" at the bottom, right-aligned. GET the one record on mount; if `null`, render the empty state copy above with the same form (create-via-save-once behavior, singleton enforced server-side). No delete button, no "+ Add" button, no second row ever.
+1. **Company Profile page** (`CompanyPage.tsx`, new route e.g. `/company`): a single settings-style form, NOT a `DataTable` list. Layout: `PageHeader` (title only, no "+ Add" action, no filters) → single `Card` → `FormGrid` with `Field`/`TextInput` for Legal Name, Tax ID, Address → one `Button variant="primary"` "Save Company Profile" at the bottom, right-aligned. GET the one record on mount; if `null`, render the empty state copy above with the same form (create-via-save-once behavior, singleton enforced server-side). No delete button, no "+ Add" button, no second row ever. **Visual focal point:** the single "Save Company Profile" button is the visual endpoint of the page — it is the only right-aligned, colored (amber) element below an otherwise neutral form, so the eye is drawn there last.
 
 2. **LicensesPage.tsx form changes**: add two new `SelectField`s — "Company" (optional; since only one Company exists, may pre-select it automatically once the record loads) and "Product" (optional, default option "-- Not product-specific --"). **Remove** the existing manual `daysRemaining`/`status` input fields from the form entirely — these become read-only, server-computed values shown only as a `Badge` (using the permit tier tone table above) in the license list/table, never as an editable input.
 
-3. **DashboardPage.tsx permit section**: replace the current single `AlertCard` "Licenses" tile (flat `expiringLicenses` list, `daysRemaining <= 30`) with a dedicated "Permit Deadlines" `Card` containing 5 compact bucket tiles in a `grid-cols-2 sm:grid-cols-5` row — each tile shows the bucket label (Label typography), a count (Display typography), and uses the matching tone Badge/background per the tier table above. Each tile links to `/licenses` (reuse existing `Link` pattern from `AlertCard`). No new endpoint — client-side `useMemo` grouping of the already-fetched `licenses` list, same technique as the current `expiringLicenses` filter, extended from 1 bucket to 5.
+3. **DashboardPage.tsx permit section**: replace the current single `AlertCard` "Licenses" tile (flat `expiringLicenses` list, `daysRemaining <= 30`) with a dedicated "Permit Deadlines" `Card` containing 5 compact bucket tiles in a `grid-cols-2 sm:grid-cols-5 gap-4` row — each tile (`p-4`, tone-tinted background) shows the bucket label (Body typography), a count (Display typography), and uses the matching tone background per the tier table above. Each tile links to `/licenses` (reuse existing `Link` pattern from `AlertCard`). No new endpoint — client-side `useMemo` grouping of the already-fetched `licenses` list, same technique as the current `expiringLicenses` filter, extended from 1 bucket to 5. **Visual focal point:** the 5-tile bucket row is the focal point of the Permit Deadlines card, ordered by urgency left-to-right (Preparation → Notify → Warning → Important Warning → Expired), so the eye travels from calm (slate/sky) to alarming (rose) as it reads left to right.
 
 4. **ImportOrdersPage.tsx / SalesOrdersPage.tsx blocking UX**: SalesOrdersPage already has a `validation.blockers`/`validation.warnings` array rendered as rose/amber message rows (lines 550–565) — extend that array with the new expired-permit blocker message (copy above) whenever a line item's product has a linked License with `status === EXPIRED`. ImportOrdersPage has **no** existing blockers/warnings UI (confirmed — zero matches) — this pattern must be introduced there for the first time, copying the exact visual structure (rose `ShieldAlert` box, `rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700`) verbatim from `SalesOrdersPage.tsx`, not reinvented.
 
