@@ -18,6 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 4: Approval Workflow** - Orders move through a real DRAFT/PENDING_APPROVAL/APPROVED/REJECTED/CANCELLED status machine, self-approval is blocked, and stock deducts only on approval
 - [ ] **Phase 5: Liquor Tax & Compliance Data** - Products and import orders capture HS code, excise, ABV, landed cost inputs, and permit/document references; incomplete products are flagged
 - [ ] **Phase 6: Documents & Reporting** - Users generate invoices, delivery notes, picking lists, and reports; dashboard KPIs compute from live data
+- [ ] **Phase 7: Company Profile & Permit Deadlines** - A single Company profile backs the system's licenses and documents; permits auto-status on a 120/90/60/30-day notification schedule and block product transactions when expired
 
 ## Phase Details
 
@@ -119,10 +120,33 @@ Plans:
   4. Dashboard KPIs are calculated from live operational data instead of manually maintained KPI rows
 **Plans**: TBD
 
+### Phase 7: Company Profile & Permit Deadlines
+**Goal**: Permits are linked to a real company/product record and notify on a tiered schedule instead of a flat days-remaining number
+**Depends on**: Phase 2 (RBAC, for who receives/edits notifications)
+**Requirements**: COMPANY-01, PERMIT-01, PERMIT-02, PERMIT-03, PERMIT-04
+**Scope note**: Trimmed from the full spec's Company/Branch/Warehouse structure — no second site exists yet, so only a single `Company` profile is added; multi-branch/warehouse tables are deferred until a real second site exists (`InventoryStock.warehouse` stays a plain string for now).
+**Success Criteria** (what must be TRUE):
+  1. A Company profile (legal name, Tax ID, address) exists and is reused wherever company identity is needed, instead of being re-entered
+  2. A `License` record can reference the Company and, optionally, a specific Product; existing licenses without a link keep working unchanged
+  3. Permit status is computed from days-to-expiry against the 120/90/60/30-day tiers, not hand-set
+  4. The dashboard groups permits by threshold bucket (120/90/60/30 days, expired) rather than a single flat "expiring" list
+  5. An expired permit is visibly flagged, and if it's linked to a specific product, creating a new import or sales order for that product is blocked until the permit is resolved
+**Plans**: 8 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Schema (Company model, License FKs), permitStatus util, Company backend + db push [BLOCKING]
+- [ ] 07-02-PLAN.md — License backend: companyId/productId linking, computed status/daysRemaining
+- [ ] 07-03-PLAN.md — Order-blocking backend gate (import + sales, create + update)
+- [ ] 07-04-PLAN.md — Frontend types/resources/status/i18n foundation
+- [ ] 07-05-PLAN.md — Company Profile page (checkpoint)
+- [ ] 07-06-PLAN.md — Licenses form Company/Product linking (checkpoint)
+- [ ] 07-07-PLAN.md — Dashboard 5-bucket permit grouping (checkpoint)
+- [ ] 07-08-PLAN.md — Order-blocking UI, sales + import orders (checkpoint)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -132,3 +156,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 4. Approval Workflow | 0/TBD | Not started | - |
 | 5. Liquor Tax & Compliance Data | 0/TBD | Not started | - |
 | 6. Documents & Reporting | 0/TBD | Not started | - |
+| 7. Company Profile & Permit Deadlines | 0/8 | Not started | - |
