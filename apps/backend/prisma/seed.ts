@@ -55,6 +55,29 @@ const products = [
   ["SKU-1012", "Riverside Craft Lager 6-pack", "CAT-BEER", "SUP-RIVERSIDE", 5, 330, "pack", 820, 1250, 560, "READY"],
 ] as const;
 
+// Import-side tax rate (customs duty + Japanese liquor tax burden, expressed as a flat
+// percentage of the line's pre-tax value for this demo) varies by category — spirits carry
+// the heaviest rate, beer the lightest. Applied to every import_order_items row below.
+const importTaxRateByCode: Record<string, number> = {
+  "SKU-1001": 16, // Whisky
+  "SKU-1002": 16,
+  "SKU-1003": 16,
+  "SKU-1011": 16,
+  "SKU-1004": 12, // Tequila
+  "SKU-1005": 15, // Red wine
+  "SKU-1006": 15, // White wine
+  "SKU-1007": 10, // Vodka
+  "SKU-1008": 10, // Gin
+  "SKU-1009": 8, // Liqueur
+  "SKU-1010": 11, // Rum
+  "SKU-1012": 5, // Beer
+};
+
+// Sales-side tax rate: Japanese consumption tax on alcoholic beverages is a flat 10% —
+// alcohol is explicitly excluded from the reduced 8% rate — so every sales_order_items row
+// below uses this constant regardless of product category.
+const SALES_TAX_RATE = 10;
+
 // Import orders can carry several liquor varieties from the same supplier in one shipment
 // (see e.g. IMP-2026-0142 and IMP-2026-0150/0151, all Highland Spirits, at different stages
 // of the pipeline). Each line item is what inventory lots later reference for traceability.
@@ -568,12 +591,20 @@ async function main() {
   // lots below can look up the exact import order item they were received against.
   const importOrderItemIdByKey = new Map<string, number>();
   for (const order of importOrders) {
-    const itemRows = order.items.map((item) => ({
-      productId: productIdByCode.get(item.productCode)!,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      subtotal: item.quantity * item.unitPrice,
-    }));
+    const itemRows = order.items.map((item) => {
+      const taxRate = importTaxRateByCode[item.productCode] ?? 0;
+      const subtotal = item.quantity * item.unitPrice;
+      const taxAmount = subtotal * (taxRate / 100);
+      return {
+        productId: productIdByCode.get(item.productCode)!,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        taxRate,
+        taxAmount,
+        subtotal,
+      };
+    });
+    const taxTotal = itemRows.reduce((sum, row) => sum + row.taxAmount, 0);
     const created = await prisma.importOrder.create({
       data: {
         orderNo: order.orderNo,
@@ -583,7 +614,8 @@ async function main() {
         orderDate: date(order.orderDate),
         etaDate: date(order.etaDate),
         skuItemCount: itemRows.length,
-        totalValue: itemRows.reduce((sum, row) => sum + row.subtotal, 0),
+        totalValue: itemRows.reduce((sum, row) => sum + row.subtotal, 0) + taxTotal,
+        taxTotal,
         status: order.status,
         approver: nullable(order.approver),
         customsEntryNo: nullable(order.customsEntryNo),
@@ -669,14 +701,21 @@ async function main() {
   });
 
   for (const order of salesOrders) {
-    const itemRows = order.items.map((item) => ({
-      productId: productIdByCode.get(item.productCode)!,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      discount: item.discount,
-      lotBatch: item.lotBatch,
-      netValue: item.quantity * item.unitPrice * (1 - item.discount / 100),
-    }));
+    const itemRows = order.items.map((item) => {
+      const discounted = item.quantity * item.unitPrice * (1 - item.discount / 100);
+      const taxAmount = discounted * (SALES_TAX_RATE / 100);
+      return {
+        productId: productIdByCode.get(item.productCode)!,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        discount: item.discount,
+        taxRate: SALES_TAX_RATE,
+        taxAmount,
+        lotBatch: item.lotBatch,
+        netValue: discounted + taxAmount,
+      };
+    });
+    const taxTotal = itemRows.reduce((sum, row) => sum + row.taxAmount, 0);
     // CUS-0007 (DrinkHub) has no license on file, so its one order is left unlinked —
     // a legacy record predating strict license enforcement, which the schema tolerates.
     const license = customerLicenseByCode.get(order.customerCode);
@@ -688,6 +727,7 @@ async function main() {
         invoiceNo: order.invoiceNo,
         approver: nullable(order.approver),
         netValue: itemRows.reduce((sum, row) => sum + row.netValue, 0),
+        taxTotal,
         items: { create: itemRows },
         ...(license
           ? {
@@ -751,7 +791,7 @@ async function main() {
     status: "RECEIVED",
     approver: "Kumiko Sato (Manager)",
     customsEntryNo: "IDN-2026-003350",
-    items: [{ productId: productIdByCode.get("SKU-1012")!, quantity: 240, unitPrice: 820 }],
+    items: [{ productId: productIdByCode.get("SKU-1012")!, quantity: 240, unitPrice: 820, taxRate: importTaxRateByCode["SKU-1012"] }],
   });
 
   await SalesOrderModel.create({
@@ -761,8 +801,8 @@ async function main() {
     deliveryStatus: "PENDING",
     invoiceNo: "INV-2026-8810",
     items: [
-      { productId: productIdByCode.get("SKU-1012")!, quantity: 36, unitPrice: 1250, discount: 5, lotBatch: "LOT-A2608-05" },
-      { productId: productIdByCode.get("SKU-1010")!, quantity: 8, unitPrice: 3200, discount: 5, lotBatch: "LOT-A2607-02" },
+      { productId: productIdByCode.get("SKU-1012")!, quantity: 36, unitPrice: 1250, discount: 5, taxRate: SALES_TAX_RATE, lotBatch: "LOT-A2608-05" },
+      { productId: productIdByCode.get("SKU-1010")!, quantity: 8, unitPrice: 3200, discount: 5, taxRate: SALES_TAX_RATE, lotBatch: "LOT-A2607-02" },
     ],
   });
 

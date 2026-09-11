@@ -16,18 +16,32 @@ export interface SalesOrderItemInput {
   quantity: number;
   unitPrice: number;
   discount: number;
+  taxRate?: number;
   lotBatch: string;
 }
 
 const toItemRows = (items: SalesOrderItemInput[]) =>
-  items.map((item) => ({
-    productId: item.productId,
-    quantity: item.quantity,
-    unitPrice: item.unitPrice,
-    discount: item.discount,
-    lotBatch: item.lotBatch,
-    netValue: item.quantity * item.unitPrice * (1 - item.discount / 100),
-  }));
+  items.map((item) => {
+    const taxRate = item.taxRate ?? 0;
+    const discounted = item.quantity * item.unitPrice * (1 - item.discount / 100);
+    const taxAmount = discounted * (taxRate / 100);
+    return {
+      productId: item.productId,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      discount: item.discount,
+      taxRate,
+      taxAmount,
+      lotBatch: item.lotBatch,
+      netValue: discounted + taxAmount,
+    };
+  });
+
+const orderTotals = (rows: ReturnType<typeof toItemRows>) => {
+  const taxTotal = rows.reduce((sum, row) => sum + row.taxAmount, 0);
+  const netValue = rows.reduce((sum, row) => sum + row.netValue, 0);
+  return { taxTotal, netValue };
+};
 
 const createStockOutTx = async (tx: Prisma.TransactionClient, orderNo: string, items: SalesOrderItemInput[]) => {
   const referenceNo = salesOrderStockReference(orderNo);
@@ -89,7 +103,7 @@ export const SalesOrderModel = {
           deliveryStatus: data.deliveryStatus,
           invoiceNo: data.invoiceNo,
           approver: data.approver,
-          netValue: rows.reduce((sum, row) => sum + row.netValue, 0),
+          ...orderTotals(rows),
           items: { create: rows },
           ...licenseFields,
         },
@@ -146,7 +160,7 @@ export const SalesOrderModel = {
         data: {
           ...orderFields,
           ...licenseFields,
-          netValue: rows.reduce((sum, row) => sum + row.netValue, 0),
+          ...orderTotals(rows),
           items: { create: rows },
         },
         include: withRelations,

@@ -10,11 +10,16 @@ const parseItems = (value: unknown): ImportOrderItemInput[] => {
     throw new HttpError(400, "items must be a non-empty array of { productId, quantity, unitPrice }");
   }
   return value.map((raw) => {
-    const { productId, quantity, unitPrice } = raw as Record<string, unknown>;
+    const { productId, quantity, unitPrice, taxRate } = raw as Record<string, unknown>;
     if (productId == null || quantity == null || unitPrice == null) {
       throw new HttpError(400, "each item requires productId, quantity, and unitPrice");
     }
-    return { productId: Number(productId), quantity: Number(quantity), unitPrice: Number(unitPrice) };
+    return {
+      productId: Number(productId),
+      quantity: Number(quantity),
+      unitPrice: Number(unitPrice),
+      taxRate: taxRate == null ? 0 : Number(taxRate),
+    };
   });
 };
 

@@ -13,15 +13,29 @@ export interface ImportOrderItemInput {
   productId: number;
   quantity: number;
   unitPrice: number;
+  taxRate?: number;
 }
 
 const toItemRows = (items: ImportOrderItemInput[]) =>
-  items.map((item) => ({
-    productId: item.productId,
-    quantity: item.quantity,
-    unitPrice: item.unitPrice,
-    subtotal: item.quantity * item.unitPrice,
-  }));
+  items.map((item) => {
+    const taxRate = item.taxRate ?? 0;
+    const subtotal = item.quantity * item.unitPrice;
+    const taxAmount = subtotal * (taxRate / 100);
+    return {
+      productId: item.productId,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      taxRate,
+      taxAmount,
+      subtotal,
+    };
+  });
+
+const orderTotals = (rows: ReturnType<typeof toItemRows>) => {
+  const taxTotal = rows.reduce((sum, row) => sum + row.taxAmount, 0);
+  const totalValue = rows.reduce((sum, row) => sum + row.subtotal, 0) + taxTotal;
+  return { taxTotal, totalValue };
+};
 
 const createStockInTx = async (tx: Prisma.TransactionClient, orderNo: string, items: ImportOrderItemInput[]) => {
   const referenceNo = importOrderStockReference(orderNo);
@@ -76,7 +90,7 @@ export const ImportOrderModel = {
           approver: data.approver,
           customsEntryNo: data.customsEntryNo,
           skuItemCount: rows.length,
-          totalValue: rows.reduce((sum, row) => sum + row.subtotal, 0),
+          ...orderTotals(rows),
           items: { create: rows },
         },
         include: withRelations,
@@ -119,7 +133,7 @@ export const ImportOrderModel = {
         data: {
           ...orderFields,
           skuItemCount: rows.length,
-          totalValue: rows.reduce((sum, row) => sum + row.subtotal, 0),
+          ...orderTotals(rows),
           items: { create: rows },
         },
         include: withRelations,

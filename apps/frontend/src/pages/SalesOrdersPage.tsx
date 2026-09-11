@@ -19,7 +19,7 @@ import { isCustomerLicenseValid } from "./customers/CustomerLicensesPanel";
 import { formatCurrency, formatDate } from "../lib/format";
 import { statusTone } from "../lib/status";
 
-type ItemRow = { productId: string; quantity: string; unitPrice: string; discount: string; lotBatch: string };
+type ItemRow = { productId: string; quantity: string; unitPrice: string; discount: string; taxRate: string; lotBatch: string };
 
 type FormState = {
   orderNo: string;
@@ -41,7 +41,7 @@ const emptyForm: FormState = {
   items: [],
 };
 
-const emptyItem: ItemRow = { productId: "", quantity: "1", unitPrice: "", discount: "0", lotBatch: "" };
+const emptyItem: ItemRow = { productId: "", quantity: "1", unitPrice: "", discount: "0", taxRate: "0", lotBatch: "" };
 
 const DELIVERY_OPTIONS = ["PENDING", "SHIPPING", "DELIVERED", "RETURNED", "DAMAGED"];
 
@@ -103,7 +103,11 @@ export function SalesOrdersPage() {
   }, [form.items]);
 
   const itemSubtotal = (item: ItemRow) => Number(item.quantity || 0) * Number(item.unitPrice || 0) * (1 - Number(item.discount || 0) / 100);
-  const orderTotal = form.items.reduce((sum, item) => sum + itemSubtotal(item), 0);
+  const itemTax = (item: ItemRow) => itemSubtotal(item) * (Number(item.taxRate || 0) / 100);
+  const itemTotal = (item: ItemRow) => itemSubtotal(item) + itemTax(item);
+  const itemsSubtotal = form.items.reduce((sum, item) => sum + itemSubtotal(item), 0);
+  const itemsTax = form.items.reduce((sum, item) => sum + itemTax(item), 0);
+  const orderTotal = itemsSubtotal + itemsTax;
 
   const validation = useMemo(() => {
     const blockers: string[] = [];
@@ -165,6 +169,7 @@ export function SalesOrdersPage() {
         quantity: String(item.quantity),
         unitPrice: item.unitPrice,
         discount: item.discount,
+        taxRate: item.taxRate ?? "0",
         lotBatch: item.lotBatch,
       })),
     });
@@ -204,6 +209,7 @@ export function SalesOrdersPage() {
           quantity: Number(item.quantity),
           unitPrice: Number(item.unitPrice),
           discount: Number(item.discount || 0),
+          taxRate: Number(item.taxRate || 0),
           lotBatch: item.lotBatch,
         })),
       };
@@ -484,7 +490,19 @@ export function SalesOrdersPage() {
                               className="bg-white"
                             />
                           </div>
-                          <div className="w-28 pb-2 text-right text-xs text-slate-500">{formatCurrency(itemSubtotal(item))}</div>
+                          <div className="w-20">
+                            <TextInput
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.01"
+                              placeholder={t("salesOrder.items.taxRatePlaceholder")}
+                              value={item.taxRate}
+                              onChange={(e) => updateItem(index, { taxRate: e.target.value })}
+                              className="bg-white"
+                            />
+                          </div>
+                          <div className="w-28 pb-2 text-right text-xs text-slate-500">{formatCurrency(itemTotal(item))}</div>
                           <Button variant="ghost" size="sm" onClick={() => removeItem(index)} icon={<X className="h-3.5 w-3.5 text-rose-500" />} />
                         </div>
                         <SelectField
@@ -507,9 +525,19 @@ export function SalesOrdersPage() {
               )}
 
               {form.items.length > 0 && (
-                <div className="mt-2 flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
-                  <span className="text-slate-500">{t("salesOrder.items.summary", { count: form.items.length })}</span>
-                  <span className="font-semibold text-slate-900">{t("salesOrder.items.total", { amount: formatCurrency(orderTotal) })}</span>
+                <div className="mt-2 space-y-1 rounded-lg bg-slate-50 px-3 py-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">{t("salesOrder.items.summary", { count: form.items.length })}</span>
+                    <span className="text-slate-500">{t("salesOrder.items.subtotalLine", { amount: formatCurrency(itemsSubtotal) })}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">{t("salesOrder.items.taxLine")}</span>
+                    <span className="text-slate-500">{formatCurrency(itemsTax)}</span>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-slate-200 pt-1">
+                    <span className="text-slate-500">{t("common.total")}</span>
+                    <span className="font-semibold text-slate-900">{t("salesOrder.items.total", { amount: formatCurrency(orderTotal) })}</span>
+                  </div>
                 </div>
               )}
             </div>

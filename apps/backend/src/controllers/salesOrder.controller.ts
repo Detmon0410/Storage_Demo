@@ -7,7 +7,7 @@ const parseItems = (value: unknown): SalesOrderItemInput[] => {
     throw new HttpError(400, "items must be a non-empty array of { productId, quantity, unitPrice, discount, lotBatch }");
   }
   return value.map((raw) => {
-    const { productId, quantity, unitPrice, discount, lotBatch } = raw as Record<string, unknown>;
+    const { productId, quantity, unitPrice, discount, taxRate, lotBatch } = raw as Record<string, unknown>;
     if (productId == null || quantity == null || unitPrice == null || discount == null || !lotBatch) {
       throw new HttpError(400, "each item requires productId, quantity, unitPrice, discount, and lotBatch");
     }
@@ -16,6 +16,7 @@ const parseItems = (value: unknown): SalesOrderItemInput[] => {
       quantity: Number(quantity),
       unitPrice: Number(unitPrice),
       discount: Number(discount),
+      taxRate: taxRate == null ? 0 : Number(taxRate),
       lotBatch: String(lotBatch),
     };
   });

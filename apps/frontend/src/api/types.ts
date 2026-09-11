@@ -58,6 +58,8 @@ export interface ImportOrderItem {
   productId: number;
   quantity: number;
   unitPrice: string;
+  taxRate: string;
+  taxAmount: string;
   subtotal: string;
   product?: Product;
   importOrder?: ImportOrder;
@@ -73,6 +75,7 @@ export interface ImportOrder {
   etaDate: string;
   skuItemCount: number;
   totalValue: string;
+  taxTotal: string;
   status: string;
   approver: string | null;
   customsEntryNo: string | null;
@@ -135,6 +138,8 @@ export interface SalesOrderItem {
   quantity: number;
   unitPrice: string;
   discount: string;
+  taxRate: string;
+  taxAmount: string;
   netValue: string;
   lotBatch: string;
   product?: Product;
@@ -145,6 +150,7 @@ export interface SalesOrder {
   orderNo: string;
   customerId: number;
   netValue: string;
+  taxTotal: string;
   deliveryStatus: string;
   invoiceNo: string;
   approver: string | null;

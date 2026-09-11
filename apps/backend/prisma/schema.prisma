@@ -92,6 +92,7 @@ model ImportOrder {
   etaDate        DateTime @map("eta_date") @db.Date
   skuItemCount   Int      @map("sku_item_count")
   totalValue     Decimal  @map("total_value") @db.Decimal(14, 2)
+  taxTotal       Decimal  @default(0) @map("tax_total") @db.Decimal(14, 2)
   status         String
   approver       String?
   customsEntryNo String?  @map("customs_entry_no")
@@ -108,6 +109,8 @@ model ImportOrderItem {
   productId         Int     @map("product_id")
   quantity          Int
   unitPrice         Decimal @map("unit_price") @db.Decimal(12, 2)
+  taxRate           Decimal @default(0) @map("tax_rate") @db.Decimal(5, 2)
+  taxAmount         Decimal @default(0) @map("tax_amount") @db.Decimal(14, 2)
   subtotal          Decimal @db.Decimal(14, 2)
 
   importOrder   ImportOrder      @relation(fields: [importOrderId], references: [importOrderId], onDelete: Cascade)
@@ -190,6 +193,7 @@ model SalesOrder {
   orderNo        String  @unique @map("order_no")
   customerId     Int     @map("customer_id")
   netValue       Decimal @map("net_value") @db.Decimal(14, 2)
+  taxTotal       Decimal @default(0) @map("tax_total") @db.Decimal(14, 2)
   deliveryStatus String  @map("delivery_status")
   invoiceNo      String  @map("invoice_no")
   approver       String?
@@ -213,6 +217,8 @@ model SalesOrderItem {
   quantity         Int
   unitPrice        Decimal @map("unit_price") @db.Decimal(12, 2)
   discount         Decimal @db.Decimal(5, 2)
+  taxRate          Decimal @default(0) @map("tax_rate") @db.Decimal(5, 2)
+  taxAmount        Decimal @default(0) @map("tax_amount") @db.Decimal(14, 2)
   netValue         Decimal @map("net_value") @db.Decimal(14, 2)
   lotBatch         String  @map("lot_batch")
 
