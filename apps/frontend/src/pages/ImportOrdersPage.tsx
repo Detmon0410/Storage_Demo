@@ -119,7 +119,7 @@ export function ImportOrdersPage() {
   };
 
   const addItem = () =>
-    setForm({ ...form, items: [...form.items, { productId: "", quantity: "1", unitPrice: "", taxRate: "0" }] });
+    setForm({ ...form, items: [...form.items, { productId: "", quantity: "1", unitPrice: "", taxRate: "" }] });
   const removeItem = (index: number) => setForm({ ...form, items: form.items.filter((_, i) => i !== index) });
   const updateItem = (index: number, patch: Partial<ItemRow>) =>
     setForm({ ...form, items: form.items.map((item, i) => (i === index ? { ...item, ...patch } : item)) });

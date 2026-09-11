@@ -41,7 +41,7 @@ const emptyForm: FormState = {
   items: [],
 };
 
-const emptyItem: ItemRow = { productId: "", quantity: "1", unitPrice: "", discount: "0", taxRate: "0", lotBatch: "" };
+const emptyItem: ItemRow = { productId: "", quantity: "1", unitPrice: "", discount: "", taxRate: "", lotBatch: "" };
 
 const DELIVERY_OPTIONS = ["PENDING", "SHIPPING", "DELIVERED", "RETURNED", "DAMAGED"];
 
