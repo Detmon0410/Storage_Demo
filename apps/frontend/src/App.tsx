@@ -3,6 +3,7 @@ import { AuthProvider } from "./auth/AuthContext";
 import { RequireAuth } from "./auth/RequireAuth";
 import { AppShell } from "./components/layout/AppShell";
 import { ToastProvider } from "./components/ui/Toast";
+import { AuditLogPage } from "./pages/AuditLogPage";
 import { CategoriesPage } from "./pages/CategoriesPage";
 import { CompanyPage } from "./pages/CompanyPage";
 import { CustomersPage } from "./pages/CustomersPage";
@@ -40,6 +41,7 @@ function App() {
                 <Route path="/customers" element={<CustomersPage />} />
                 <Route path="/sales-orders" element={<SalesOrdersPage />} />
                 <Route path="/users" element={<UsersPage />} />
+                <Route path="/audit-logs" element={<AuditLogPage />} />
               </Route>
             </Route>
           </Routes>

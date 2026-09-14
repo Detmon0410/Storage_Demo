@@ -576,6 +576,34 @@ export const en = {
       FINANCE_ACCOUNTING_OFFICER: "Finance / Accounting Officer",
     },
   },
+  audit: {
+    title: "Audit Log",
+    subtitle: "Review a complete history of create, update, delete, approval, and login activity across the system",
+    emptyTitle: "No audit events found",
+    emptyDesc: "Try widening your date range or clearing a filter.",
+    filter: {
+      entity: "Entity",
+      user: "User",
+      action: "Action",
+      dateRange: "Date range",
+    },
+    allEntities: "All entities",
+    allUsers: "All users",
+    allActions: "All actions",
+    viewDetails: "View details",
+    detailsBefore: "Before",
+    detailsAfter: "After",
+    action: {
+      create: "Create",
+      update: "Update",
+      delete: "Delete",
+      login: "Login",
+      logout: "Logout",
+      approve: "Approve",
+      reject: "Reject",
+      export: "Export",
+    },
+  },
 };
 
 export type TranslationSchema = typeof en;

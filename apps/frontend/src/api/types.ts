@@ -210,3 +210,23 @@ export interface User {
   status: "ACTIVE" | "INACTIVE";
   roles: RoleCode[];
 }
+
+export interface AuditLog {
+  auditLogId: number;
+  entity: string;
+  entityId: string;
+  action: string;
+  userId: number | null;
+  before: unknown;
+  after: unknown;
+  createdAt: string;
+  user?: { id: number; username: string } | null;
+}
+
+export interface AuditLogFilter {
+  entity?: string;
+  userId?: number;
+  action?: string;
+  from?: string;
+  to?: string;
+}
