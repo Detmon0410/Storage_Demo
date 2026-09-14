@@ -2,7 +2,7 @@ import request from "supertest";
 import { afterAll, describe, expect, it } from "vitest";
 import { app } from "../src/app.js";
 import { cleanupTestUsers, prisma } from "./setup.js";
-import { createTestUser } from "./fixtures/testUser.js";
+import { createTestUser, createTestUserWithRoles } from "./fixtures/testUser.js";
 
 describe("GET route authentication enforcement", () => {
   afterAll(cleanupTestUsers);
@@ -18,7 +18,7 @@ describe("GET route authentication enforcement", () => {
   });
 
   it("returns 200 with an array for GET /api/categories with a valid access token", async () => {
-    const { username, password } = await createTestUser("enforcement_get");
+    const { username, password } = await createTestUserWithRoles("enforcement_get", ["SYSTEM_ADMIN"]);
     const loginRes = await request(app).post("/api/auth/login").send({ username, password });
     const accessToken = loginRes.body.accessToken;
 
@@ -45,7 +45,7 @@ describe("GET route authentication enforcement", () => {
   });
 
   it("still allows an authenticated POST /api/categories to succeed", async () => {
-    const { username, password } = await createTestUser("enforcement_post");
+    const { username, password } = await createTestUserWithRoles("enforcement_post", ["SYSTEM_ADMIN"]);
     const loginRes = await request(app).post("/api/auth/login").send({ username, password });
     const accessToken = loginRes.body.accessToken;
 
@@ -68,7 +68,7 @@ describe("GET route authentication enforcement", () => {
   });
 
   it("allows a full authenticated CRUD round-trip on /api/categories (create -> read -> update -> delete)", async () => {
-    const { username, password } = await createTestUser("enforcement_crud");
+    const { username, password } = await createTestUserWithRoles("enforcement_crud", ["SYSTEM_ADMIN"]);
     const loginRes = await request(app).post("/api/auth/login").send({ username, password });
     const accessToken = loginRes.body.accessToken;
     const auth = (req: request.Test) => req.set("Authorization", `Bearer ${accessToken}`);
