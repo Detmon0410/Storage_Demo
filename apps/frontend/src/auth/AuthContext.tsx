@@ -6,6 +6,8 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 interface AuthUser {
   id: number;
   username: string;
+  roles: string[];
+  permissions: string[];
 }
 
 interface AuthContextValue {
@@ -17,6 +19,12 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+async function fetchMe(token: string): Promise<AuthUser | null> {
+  const res = await fetch(`${BASE_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) return null;
+  return res.json();
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessTokenState] = useState<string | null>(null);
@@ -42,12 +50,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     fetch(`${BASE_URL}/auth/refresh`, { method: "POST", credentials: "include" })
       .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then(({ accessToken: token }) => {
+      .then(async ({ accessToken: token }) => {
         if (cancelled) return;
-        // /refresh does not return user identity, so `user` stays null after a silent
-        // refresh (e.g. on page reload). RequireAuth must treat a non-null accessToken
-        // as the authenticated signal, not `user !== null` — see AUTH context value below.
-        applyToken(token, null);
+        // /refresh does not return user identity, so fetch it separately via /auth/me.
+        // If that call fails (degraded case), fall back to a null user rather than
+        // forcing logout — RequireAuth must treat a non-null accessToken as the
+        // authenticated signal, not `user !== null` — see AUTH context value below.
+        const me = await fetchMe(token);
+        if (cancelled) return;
+        applyToken(token, me);
       })
       .catch(() => {
         if (!cancelled) clearSession();
@@ -74,7 +85,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data?.error ?? "Login failed");
       }
       const data = await res.json();
-      applyToken(data.accessToken, data.user);
+      // data.user from /auth/login is only { id, username } — apply it immediately so the
+      // session is usable, then upgrade to the fuller roles/permissions shape via /auth/me.
+      applyToken(data.accessToken, { ...data.user, roles: [], permissions: [] });
+      const me = await fetchMe(data.accessToken);
+      if (me) applyToken(data.accessToken, me);
     },
     [applyToken],
   );
