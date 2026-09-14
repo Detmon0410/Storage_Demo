@@ -43,9 +43,9 @@ describe("computePermitStatus", () => {
     expect(computePermitStatus(expiryFor(-1), TODAY)).toEqual({ daysRemaining: -1, status: "EXPIRED" });
   });
 
-  it("ignores time-of-day components (normalizes to midnight before diffing)", () => {
-    const todayWithTime = new Date("2026-09-11T23:45:00");
-    const expiryWithTime = new Date("2026-11-09T00:15:00"); // 59 days after 2026-09-11 midnight
+  it("ignores time-of-day components (normalizes to UTC midnight before diffing)", () => {
+    const todayWithTime = new Date("2026-09-11T23:45:00Z");
+    const expiryWithTime = new Date("2026-11-09T00:15:00Z"); // 59 days after 2026-09-11 UTC midnight
     expect(computePermitStatus(expiryWithTime, todayWithTime)).toEqual({ daysRemaining: 59, status: "WARNING" });
   });
 });

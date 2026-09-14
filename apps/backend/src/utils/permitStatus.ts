@@ -4,11 +4,9 @@ export function computePermitStatus(
   expiryDate: Date,
   today: Date = new Date()
 ): { daysRemaining: number; status: PermitBucket } {
-  const d = new Date(today);
-  d.setHours(0, 0, 0, 0);
-  const e = new Date(expiryDate);
-  e.setHours(0, 0, 0, 0);
-  const daysRemaining = Math.round((e.getTime() - d.getTime()) / 86400000);
+  const d = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  const e = Date.UTC(expiryDate.getUTCFullYear(), expiryDate.getUTCMonth(), expiryDate.getUTCDate());
+  const daysRemaining = Math.round((e - d) / 86400000);
   let status: PermitBucket;
   if (daysRemaining < 0) status = "EXPIRED";
   else if (daysRemaining <= 30) status = "IMPORTANT_WARNING";
