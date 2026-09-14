@@ -26,6 +26,7 @@ export const ja: TranslationSchema = {
       product: "商品・倉庫",
       compliance: "コンプライアンス",
       sales: "販売・配送",
+      administration: "管理",
     },
     item: {
       dashboard: "ダッシュボード",
@@ -39,6 +40,8 @@ export const ja: TranslationSchema = {
       licenses: "許可証",
       customers: "得意先",
       salesOrders: "販売注文",
+      users: "ユーザー",
+      auditLogs: "監査ログ",
     },
   },
   common: {

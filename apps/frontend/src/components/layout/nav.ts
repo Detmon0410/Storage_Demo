@@ -5,9 +5,11 @@ import {
   FileCheck2,
   Factory,
   LayoutDashboard,
+  ScrollText,
   ShoppingCart,
   Tags,
   Truck,
+  UserCog,
   Users,
   Wine,
 } from "lucide-react";
@@ -17,6 +19,7 @@ export interface NavItem {
   to: string;
   labelKey: string;
   icon: LucideIcon;
+  requiresPermission?: string;
 }
 
 export interface NavGroup {
@@ -57,6 +60,13 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: "/customers", labelKey: "nav.item.customers", icon: Users },
       { to: "/sales-orders", labelKey: "nav.item.salesOrders", icon: ShoppingCart },
+    ],
+  },
+  {
+    titleKey: "nav.group.administration",
+    items: [
+      { to: "/users", labelKey: "nav.item.users", icon: UserCog, requiresPermission: "USER_MANAGEMENT_FULL" },
+      { to: "/audit-logs", labelKey: "nav.item.auditLogs", icon: ScrollText, requiresPermission: "AUDIT_LOG_VIEW" },
     ],
   },
 ];
