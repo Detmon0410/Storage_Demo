@@ -1,10 +1,17 @@
 import { Wine, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
+import { useAuth } from "../../auth/AuthContext";
 import { NAV_GROUPS } from "./nav";
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useTranslation();
+  const { user } = useAuth();
+
+  const visibleGroups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => !item.requiresPermission || user?.permissions.includes(item.requiresPermission)),
+  })).filter((group) => group.items.length > 0);
 
   return (
     <>
@@ -30,7 +37,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         </div>
 
         <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
-          {NAV_GROUPS.map((group) => (
+          {visibleGroups.map((group) => (
             <div key={group.titleKey}>
               <p className="px-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{t(group.titleKey)}</p>
               <div className="mt-1.5 space-y-0.5">

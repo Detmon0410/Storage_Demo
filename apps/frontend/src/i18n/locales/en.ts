@@ -24,6 +24,7 @@ export const en = {
       product: "Product & Warehouse",
       compliance: "Compliance",
       sales: "Sales & Distribution",
+      administration: "Administration",
     },
     item: {
       dashboard: "Dashboard",
@@ -37,6 +38,8 @@ export const en = {
       licenses: "Licenses",
       customers: "Customers",
       salesOrders: "Sales Orders",
+      users: "Users",
+      auditLogs: "Audit Log",
     },
   },
   common: {
