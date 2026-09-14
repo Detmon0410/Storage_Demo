@@ -49,7 +49,7 @@ type Filters = {
 
 const emptyFilters: Filters = { entity: "", userId: "", action: "", from: "", to: "" };
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 15;
 
 export function AuditLogPage() {
   const { t } = useTranslation();
