@@ -13,6 +13,6 @@ export const licenseRoutes = Router();
 
 licenseRoutes.get("/", requireAuth, requirePermission("LICENSE_VIEW"), listLicenses);
 licenseRoutes.get("/:id", requireAuth, requirePermission("LICENSE_VIEW"), getLicense);
-licenseRoutes.post("/", requireAuth, createLicense);
-licenseRoutes.put("/:id", requireAuth, updateLicense);
-licenseRoutes.delete("/:id", requireAuth, deleteLicense);
+licenseRoutes.post("/", requireAuth, requirePermission("LICENSE_CREATE"), createLicense);
+licenseRoutes.put("/:id", requireAuth, requirePermission("LICENSE_EDIT"), updateLicense);
+licenseRoutes.delete("/:id", requireAuth, requirePermission("LICENSE_DELETE"), deleteLicense);
