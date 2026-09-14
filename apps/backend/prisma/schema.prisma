@@ -57,8 +57,20 @@ model Product {
   salesOrderItems   SalesOrderItem[]
   inventoryLots     InventoryStock[]
   importOrderItems  ImportOrderItem[]
+  licenses          License[]
 
   @@map("products")
+}
+
+model Company {
+  companyId Int    @id @default(autoincrement()) @map("company_id")
+  legalName String @map("legal_name")
+  taxId     String @map("tax_id")
+  address   String
+
+  licenses License[]
+
+  @@map("companies")
 }
 
 enum TransactionType {
@@ -121,15 +133,18 @@ model ImportOrderItem {
 }
 
 model License {
-  licenseId     Int      @id @default(autoincrement()) @map("license_id")
-  licenseNo     String   @unique @map("license_no")
-  licenseType   String   @map("license_type")
-  holderName    String   @map("holder_name")
-  category      String
-  issueDate     DateTime @map("issue_date") @db.Date
-  expiryDate    DateTime @map("expiry_date") @db.Date
-  daysRemaining Int      @map("days_remaining")
-  status        String
+  licenseId   Int      @id @default(autoincrement()) @map("license_id")
+  licenseNo   String   @unique @map("license_no")
+  licenseType String   @map("license_type")
+  holderName  String   @map("holder_name")
+  category    String
+  issueDate   DateTime @map("issue_date") @db.Date
+  expiryDate  DateTime @map("expiry_date") @db.Date
+
+  companyId Int?     @map("company_id")
+  productId Int?     @map("product_id")
+  company   Company? @relation(fields: [companyId], references: [companyId])
+  product   Product? @relation(fields: [productId], references: [productId])
 
   @@map("licenses")
 }
