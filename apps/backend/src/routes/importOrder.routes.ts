@@ -7,11 +7,12 @@ import {
   updateImportOrder,
 } from "../controllers/importOrder.controller.js";
 import { requireAuth } from "../middleware/auth.js";
+import { requirePermission } from "../middleware/permission.js";
 
 export const importOrderRoutes = Router();
 
-importOrderRoutes.get("/", requireAuth, listImportOrders);
-importOrderRoutes.get("/:id", requireAuth, getImportOrder);
+importOrderRoutes.get("/", requireAuth, requirePermission("IMPORT_ORDER_VIEW"), listImportOrders);
+importOrderRoutes.get("/:id", requireAuth, requirePermission("IMPORT_ORDER_VIEW"), getImportOrder);
 importOrderRoutes.post("/", requireAuth, createImportOrder);
 importOrderRoutes.put("/:id", requireAuth, updateImportOrder);
 importOrderRoutes.delete("/:id", requireAuth, deleteImportOrder);
