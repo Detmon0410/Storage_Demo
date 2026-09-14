@@ -12,8 +12,8 @@ This milestone hardens an early-MVP liquor import/sales/distribution system into
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Authentication** - Users log in/out with hashed passwords and short-lived tokens; every existing API route requires a valid session
-- [ ] **Phase 2: RBAC & Audit Logging** - 6-role permission system enforced server-side per endpoint; every create/update/delete/approve/reject/login/export is recorded in an append-only audit log
+- [x] **Phase 1: Authentication** - Users log in/out with hashed passwords and short-lived tokens; every existing API route requires a valid session
+- [x] **Phase 2: RBAC & Audit Logging** - 6-role permission system enforced server-side per endpoint; every create/update/delete/approve/reject/login/export is recorded in an append-only audit log
 - [ ] **Phase 3: Backend Enforcement & Lot/Batch Stock Control** - License, stock, credit, and discount rules are enforced server-side; InventoryStock lots become the sole source of truth for quantity
 - [ ] **Phase 4: Approval Workflow** - Orders move through a real DRAFT/PENDING_APPROVAL/APPROVED/REJECTED/CANCELLED status machine, self-approval is blocked, and stock deducts only on approval
 - [ ] **Phase 5: Liquor Tax & Compliance Data** - Products and import orders capture HS code, excise, ABV, landed cost inputs, and permit/document references; incomplete products are flagged
@@ -71,7 +71,7 @@ Plans:
 - [x] 02-11-PLAN.md — User management backend: CRUD, role assignment, self-lockout guard (RBAC-02/05)
 - [x] 02-12-PLAN.md — GET /api/auth/me + AuthContext roles/permissions + nav gating (RBAC-03/06)
 - [x] 02-13-PLAN.md — Users page (multi-role checkboxes, deactivate/reactivate) + checkpoint (RBAC-05)
-- [ ] 02-14-PLAN.md — Audit Log viewer page (filters + detail modal) + checkpoint (AUDIT-04)
+- [x] 02-14-PLAN.md — Audit Log viewer page (filters + detail modal) + checkpoint (AUDIT-04)
 
 ### Phase 3: Backend Enforcement & Lot/Batch Stock Control
 **Goal**: Invalid business actions (expired license, overselling, uncontrolled credit/discount) are rejected at the backend regardless of caller
