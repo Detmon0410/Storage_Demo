@@ -8,9 +8,12 @@ const filterSchema = z.object({
   action: z.string().optional(),
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),
+  limit: z.coerce.number().int().min(1).max(200).optional(),
+  offset: z.coerce.number().int().min(0).optional(),
 });
 
 export const listAuditLogs = asyncHandler(async (req, res) => {
   const filter = filterSchema.parse(req.query);
-  res.json(await AuditLogModelQuery.findMany(filter));
+  const { items, total } = await AuditLogModelQuery.findMany(filter);
+  res.json({ items, total, limit: filter.limit ?? 50, offset: filter.offset ?? 0 });
 });

@@ -229,4 +229,13 @@ export interface AuditLogFilter {
   action?: string;
   from?: string;
   to?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface AuditLogPage {
+  items: AuditLog[];
+  total: number;
+  limit: number;
+  offset: number;
 }

@@ -33,7 +33,7 @@ describe("AuditLogModelQuery.findMany filters", () => {
     expect(createSupplierRes.status).toBe(201);
     const supplierId = createSupplierRes.body.supplierId;
 
-    const results = await AuditLogModelQuery.findMany({ entity: "Category" });
+    const { items: results } = await AuditLogModelQuery.findMany({ entity: "Category" });
 
     expect(results.length).toBeGreaterThan(0);
     expect(results.every((r) => r.entity === "Category")).toBe(true);
@@ -60,7 +60,7 @@ describe("AuditLogModelQuery.findMany filters", () => {
       .send({ categoryCode, categoryName: "Action Filter Category Updated" });
     expect(updateRes.status).toBe(200);
 
-    const results = await AuditLogModelQuery.findMany({
+    const { items: results } = await AuditLogModelQuery.findMany({
       entity: "Category",
       action: "create",
     });
@@ -84,7 +84,7 @@ describe("AuditLogModelQuery.findMany filters", () => {
 
     const futureFrom = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    const results = await AuditLogModelQuery.findMany({
+    const { items: results } = await AuditLogModelQuery.findMany({
       entity: "Category",
       from: futureFrom,
     });
@@ -112,7 +112,7 @@ describe("AuditLogModelQuery.findMany filters", () => {
       .send({ categoryCode: categoryCode2, categoryName: "Order Category B" });
     const categoryId2 = createRes2.body.categoryId;
 
-    const results = await AuditLogModelQuery.findMany({ entity: "Category" });
+    const { items: results } = await AuditLogModelQuery.findMany({ entity: "Category" });
 
     for (let i = 0; i < results.length - 1; i++) {
       expect(results[i].createdAt.getTime()).toBeGreaterThanOrEqual(results[i + 1].createdAt.getTime());

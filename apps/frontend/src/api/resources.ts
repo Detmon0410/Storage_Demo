@@ -1,7 +1,7 @@
 import { createResourceApi, request } from "./client";
 import type {
-  AuditLog,
   AuditLogFilter,
+  AuditLogPage,
   Category,
   Company,
   Customer,
@@ -62,7 +62,9 @@ export const auditLogApi = {
     if (filter.action) params.set("action", filter.action);
     if (filter.from) params.set("from", filter.from);
     if (filter.to) params.set("to", filter.to);
+    if (filter.limit != null) params.set("limit", String(filter.limit));
+    if (filter.offset != null) params.set("offset", String(filter.offset));
     const qs = params.toString();
-    return request<AuditLog[]>(`/audit-logs${qs ? `?${qs}` : ""}`);
+    return request<AuditLogPage>(`/audit-logs${qs ? `?${qs}` : ""}`);
   },
 };

@@ -43,7 +43,8 @@ describe("GET /api/audit-logs — filterable, permission-gated, structurally imm
     const res = await request(app).get("/api/audit-logs").set("Authorization", `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
+    expect(Array.isArray(res.body.items)).toBe(true);
+    expect(typeof res.body.total).toBe("number");
   });
 
   it("denies SALES_OFFICER GET /api/audit-logs with 403", async () => {

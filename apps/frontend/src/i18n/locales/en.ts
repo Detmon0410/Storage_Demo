@@ -593,6 +593,10 @@ export const en = {
     viewDetails: "View details",
     detailsBefore: "Before",
     detailsAfter: "After",
+    pageRange: "Showing {{start}}-{{end}} of {{total}}",
+    pageOf: "Page {{page}} of {{pageCount}}",
+    prevPage: "Previous",
+    nextPage: "Next",
     action: {
       create: "Create",
       update: "Update",

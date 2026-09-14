@@ -592,6 +592,10 @@ export const ja: TranslationSchema = {
     viewDetails: "詳細を表示",
     detailsBefore: "変更前",
     detailsAfter: "変更後",
+    pageRange: "{{total}}件中 {{start}}-{{end}}件を表示",
+    pageOf: "{{pageCount}}ページ中 {{page}}ページ目",
+    prevPage: "前へ",
+    nextPage: "次へ",
     action: {
       create: "作成",
       update: "更新",

@@ -49,9 +49,13 @@ type Filters = {
 
 const emptyFilters: Filters = { entity: "", userId: "", action: "", from: "", to: "" };
 
+const PAGE_SIZE = 50;
+
 export function AuditLogPage() {
   const { t } = useTranslation();
   const [rows, setRows] = useState<AuditLog[]>([]);
+  const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(emptyFilters);
@@ -67,8 +71,13 @@ export function AuditLogPage() {
       action: filters.action || undefined,
       from: filters.from || undefined,
       to: filters.to || undefined,
+      limit: PAGE_SIZE,
+      offset,
     })
-      .then((data) => setRows(data))
+      .then((page) => {
+        setRows(page.items);
+        setTotal(page.total);
+      })
       .catch((err) => setError(err instanceof Error ? err.message : t("common.connectionError")))
       .finally(() => setLoading(false));
   };
@@ -76,7 +85,17 @@ export function AuditLogPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.entity, filters.userId, filters.action, filters.from, filters.to]);
+  }, [filters.entity, filters.userId, filters.action, filters.from, filters.to, offset]);
+
+  const updateFilters = (patch: Partial<Filters>) => {
+    setOffset(0);
+    setFilters((prev) => ({ ...prev, ...patch }));
+  };
+
+  const page = Math.floor(offset / PAGE_SIZE) + 1;
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const rangeStart = total === 0 ? 0 : offset + 1;
+  const rangeEnd = Math.min(offset + rows.length, total);
 
   const columns: Column<AuditLog>[] = [
     { key: "timestamp", header: "Timestamp", render: (r) => new Date(r.createdAt).toLocaleString() },
@@ -117,7 +136,7 @@ export function AuditLogPage() {
           <>
             <SelectField
               value={filters.entity}
-              onChange={(e) => setFilters({ ...filters, entity: e.target.value })}
+              onChange={(e) => updateFilters({ entity: e.target.value })}
               aria-label={t("audit.filter.entity")}
             >
               <option value="">{t("audit.allEntities")}</option>
@@ -130,14 +149,14 @@ export function AuditLogPage() {
             <TextInput
               type="number"
               value={filters.userId}
-              onChange={(e) => setFilters({ ...filters, userId: e.target.value })}
+              onChange={(e) => updateFilters({ userId: e.target.value })}
               placeholder="User ID"
               aria-label={t("audit.filter.user")}
               className="w-28"
             />
             <SelectField
               value={filters.action}
-              onChange={(e) => setFilters({ ...filters, action: e.target.value })}
+              onChange={(e) => updateFilters({ action: e.target.value })}
               aria-label={t("audit.filter.action")}
             >
               <option value="">{t("audit.allActions")}</option>
@@ -150,14 +169,14 @@ export function AuditLogPage() {
             <TextInput
               type="date"
               value={filters.from}
-              onChange={(e) => setFilters({ ...filters, from: e.target.value })}
+              onChange={(e) => updateFilters({ from: e.target.value })}
               aria-label={`${t("audit.filter.dateRange")} from`}
               className="w-40"
             />
             <TextInput
               type="date"
               value={filters.to}
-              onChange={(e) => setFilters({ ...filters, to: e.target.value })}
+              onChange={(e) => updateFilters({ to: e.target.value })}
               aria-label={`${t("audit.filter.dateRange")} to`}
               className="w-40"
             />
@@ -172,7 +191,31 @@ export function AuditLogPage() {
       ) : rows.length === 0 ? (
         <EmptyState title={t("audit.emptyTitle")} description={t("audit.emptyDesc")} />
       ) : (
-        <DataTable columns={columns} rows={rows} getRowKey={(r) => r.auditLogId} />
+        <>
+          <DataTable columns={columns} rows={rows} getRowKey={(r) => r.auditLogId} />
+          <div className="mt-3 flex items-center justify-between text-sm text-slate-600">
+            <span>{t("audit.pageRange", { start: rangeStart, end: rangeEnd, total })}</span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={offset === 0}
+                onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
+              >
+                {t("audit.prevPage")}
+              </Button>
+              <span>{t("audit.pageOf", { page, pageCount })}</span>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={offset + PAGE_SIZE >= total}
+                onClick={() => setOffset(offset + PAGE_SIZE)}
+              >
+                {t("audit.nextPage")}
+              </Button>
+            </div>
+          </div>
+        </>
       )}
 
       {viewing && (
