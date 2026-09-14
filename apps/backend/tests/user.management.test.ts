@@ -1,7 +1,14 @@
+import request from "supertest";
 import { afterAll, describe, expect, it } from "vitest";
+import { app } from "../src/app.js";
 import { UserModel } from "../src/models/user.model.js";
 import { cleanupTestUsers, prisma } from "./setup.js";
 import { createTestUserWithRoles } from "./fixtures/testUser.js";
+
+async function loginAs(username: string, password: string) {
+  const res = await request(app).post("/api/auth/login").send({ username, password });
+  return res.body.accessToken as string;
+}
 
 // The seeded database always has a real SYSTEM_ADMIN besides our test fixtures, so to exercise
 // the "last active admin" guard we temporarily deactivate every OTHER active admin inside an
@@ -73,5 +80,87 @@ describe("UserModel management", () => {
     await UserModel.assignRoles(user.id, ["SALES_OFFICER"]);
     const withRoles = await UserModel.findByIdWithRoles(user.id);
     expect(withRoles?.userRoles.map((ur) => ur.role.roleCode)).toEqual(["SALES_OFFICER"]);
+  });
+});
+
+describe("User management HTTP routes", () => {
+  afterAll(cleanupTestUsers);
+
+  it("SYSTEM_ADMIN can create -> assign roles -> deactivate -> reactivate a user end-to-end", async () => {
+    const { username: adminUsername, password: adminPassword } = await createTestUserWithRoles("http_admin", ["SYSTEM_ADMIN"]);
+    const adminToken = await loginAs(adminUsername, adminPassword);
+
+    const newUsername = `test_http_created_${Date.now()}`;
+    const createRes = await request(app)
+      .post("/api/users")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ username: newUsername, password: "TestPass123", roleCodes: ["SALES_OFFICER", "WAREHOUSE_DISTRIBUTION_OFFICER"] });
+    expect(createRes.status).toBe(201);
+    expect(createRes.body.roles.sort()).toEqual(["SALES_OFFICER", "WAREHOUSE_DISTRIBUTION_OFFICER"].sort());
+    expect(createRes.body.passwordHash).toBeUndefined();
+    const createdId = createRes.body.id as number;
+
+    const getRes = await request(app).get(`/api/users/${createdId}`).set("Authorization", `Bearer ${adminToken}`);
+    expect(getRes.status).toBe(200);
+    expect(getRes.body.roles.sort()).toEqual(["SALES_OFFICER", "WAREHOUSE_DISTRIBUTION_OFFICER"].sort());
+
+    const deactivateRes = await request(app)
+      .post(`/api/users/${createdId}/deactivate`)
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(deactivateRes.status).toBe(200);
+    const afterDeactivate = await request(app).get(`/api/users/${createdId}`).set("Authorization", `Bearer ${adminToken}`);
+    expect(afterDeactivate.body.status).toBe("INACTIVE");
+
+    const reactivateRes = await request(app)
+      .post(`/api/users/${createdId}/reactivate`)
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(reactivateRes.status).toBe(200);
+    const afterReactivate = await request(app).get(`/api/users/${createdId}`).set("Authorization", `Bearer ${adminToken}`);
+    expect(afterReactivate.body.status).toBe("ACTIVE");
+  });
+
+  it("listUsers response includes role codes for each user, not just id/username/status", async () => {
+    const { username: adminUsername, password: adminPassword } = await createTestUserWithRoles("http_list_admin", ["SYSTEM_ADMIN"]);
+    const adminToken = await loginAs(adminUsername, adminPassword);
+    await createTestUserWithRoles("http_list_target", ["SALES_OFFICER"]);
+
+    const res = await request(app).get("/api/users").set("Authorization", `Bearer ${adminToken}`);
+    expect(res.status).toBe(200);
+    const target = res.body.find((u: { username: string }) => u.username.startsWith("test_http_list_target_"));
+    expect(target?.roles).toEqual(["SALES_OFFICER"]);
+  });
+
+  it("rejects createUser roleCodes containing an unknown role code with 400", async () => {
+    const { username: adminUsername, password: adminPassword } = await createTestUserWithRoles("http_badrole_admin", ["SYSTEM_ADMIN"]);
+    const adminToken = await loginAs(adminUsername, adminPassword);
+
+    const res = await request(app)
+      .post("/api/users")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ username: `test_http_badrole_${Date.now()}`, password: "TestPass123", roleCodes: ["NOT_A_REAL_ROLE"] });
+    expect(res.status).toBe(400);
+  });
+
+  const nonAdminCases = [
+    { name: "GET /api/users", method: "get" as const, path: () => "/api/users", body: undefined },
+    { name: "GET /api/users/:id", method: "get" as const, path: () => "/api/users/1", body: undefined },
+    { name: "POST /api/users", method: "post" as const, path: () => "/api/users", body: { username: "x", password: "TestPass123", roleCodes: ["SALES_OFFICER"] } },
+    { name: "PUT /api/users/:id", method: "put" as const, path: () => "/api/users/1", body: { username: "x" } },
+    { name: "POST /api/users/:id/deactivate", method: "post" as const, path: () => "/api/users/1/deactivate", body: undefined },
+    { name: "POST /api/users/:id/reactivate", method: "post" as const, path: () => "/api/users/1/reactivate", body: undefined },
+    { name: "PUT /api/users/:id/roles", method: "put" as const, path: () => "/api/users/1/roles", body: { roleCodes: ["SALES_OFFICER"] } },
+  ] as const;
+
+  it.each(nonAdminCases)("$name is denied with 403 for a non-admin (SALES_OFFICER)", async (testCase) => {
+    const { username, password } = await createTestUserWithRoles(
+      `http_nonadmin_${testCase.name.replace(/[^a-zA-Z]/g, "_")}`,
+      ["SALES_OFFICER"],
+    );
+    const token = await loginAs(username, password);
+
+    const req = request(app)[testCase.method](testCase.path()).set("Authorization", `Bearer ${token}`);
+    const res = testCase.body ? await req.send(testCase.body) : await req;
+
+    expect(res.status).toBe(403);
   });
 });
