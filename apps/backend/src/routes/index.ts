@@ -13,6 +13,7 @@ import { productRoutes } from "./product.routes.js";
 import { salesOrderRoutes } from "./salesOrder.routes.js";
 import { stockTransactionRoutes } from "./stockTransaction.routes.js";
 import { supplierRoutes } from "./supplier.routes.js";
+import { userRoutes } from "./user.routes.js";
 
 export const apiRoutes = Router();
 
@@ -30,3 +31,4 @@ apiRoutes.use("/sales-orders", salesOrderRoutes);
 apiRoutes.use("/inventory-stocks", inventoryStockRoutes);
 apiRoutes.use("/dashboard-kpis", dashboardKpiRoutes);
 apiRoutes.use("/audit-logs", auditLogRoutes);
+apiRoutes.use("/users", userRoutes);
