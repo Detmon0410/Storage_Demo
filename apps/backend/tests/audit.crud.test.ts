@@ -2,7 +2,7 @@ import request from "supertest";
 import { afterAll, describe, expect, it } from "vitest";
 import { app } from "../src/app.js";
 import { cleanupTestUsers, prisma } from "./setup.js";
-import { createTestUser } from "./fixtures/testUser.js";
+import { createTestUserWithRoles } from "./fixtures/testUser.js";
 
 async function loginAs(username: string, password: string) {
   const res = await request(app).post("/api/auth/login").send({ username, password });
@@ -13,7 +13,7 @@ describe("Category CRUD audit logging", () => {
   afterAll(cleanupTestUsers);
 
   it("creating a Category produces exactly one AuditLog row with entity/action/before/after", async () => {
-    const { username, password } = await createTestUser("audit_crud_create");
+    const { username, password } = await createTestUserWithRoles("audit_crud_create", ["SYSTEM_ADMIN"]);
     const accessToken = await loginAs(username, password);
     const categoryCode = `test_cat_${Date.now()}`;
 
@@ -37,7 +37,7 @@ describe("Category CRUD audit logging", () => {
   });
 
   it("updating a Category produces a second AuditLog row with before/after categoryName", async () => {
-    const { username, password } = await createTestUser("audit_crud_update");
+    const { username, password } = await createTestUserWithRoles("audit_crud_update", ["SYSTEM_ADMIN"]);
     const accessToken = await loginAs(username, password);
     const categoryCode = `test_cat_${Date.now()}`;
 

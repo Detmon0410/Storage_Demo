@@ -2,7 +2,7 @@ import request from "supertest";
 import { afterAll, describe, expect, it } from "vitest";
 import { app } from "../src/app.js";
 import { cleanupTestUsers, prisma } from "./setup.js";
-import { createTestUser } from "./fixtures/testUser.js";
+import { createTestUserWithRoles } from "./fixtures/testUser.js";
 
 async function loginAs(username: string, password: string) {
   const res = await request(app).post("/api/auth/login").send({ username, password });
@@ -13,7 +13,7 @@ describe("Category CRUD audit atomicity", () => {
   afterAll(cleanupTestUsers);
 
   it("a mutation that fails inside the transaction leaves zero new Category and AuditLog rows", async () => {
-    const { username, password } = await createTestUser("audit_atomicity");
+    const { username, password } = await createTestUserWithRoles("audit_atomicity", ["SYSTEM_ADMIN"]);
     const accessToken = await loginAs(username, password);
     const categoryCode = `test_cat_dup_${Date.now()}`;
 
