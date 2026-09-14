@@ -3,6 +3,7 @@ import { z } from "zod";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { HttpError } from "../middleware/errorHandler.js";
 import { UserModel } from "../models/user.model.js";
+import { RoleModel } from "../models/role.model.js";
 import { RefreshTokenModel } from "../models/refreshToken.model.js";
 import { signAccessToken } from "../lib/jwt.js";
 import { prisma } from "../lib/prisma.js";
@@ -62,6 +63,16 @@ export const refresh = asyncHandler(async (req, res) => {
   if (!record) throw new HttpError(401, "Session expired");
   const accessToken = signAccessToken({ userId: record.userId });
   res.json({ accessToken });
+});
+
+export const me = asyncHandler(async (req: AuthenticatedRequest, res) => {
+  const user = await UserModel.findById(req.userId!);
+  if (!user) throw new HttpError(404, "User not found");
+  const [roles, permissions] = await Promise.all([
+    RoleModel.getUserRoleCodes(user.id),
+    RoleModel.getUserPermissionCodes(user.id),
+  ]);
+  res.json({ id: user.id, username: user.username, roles, permissions: Array.from(permissions) });
 });
 
 export const logout = asyncHandler(async (req: AuthenticatedRequest, res) => {
