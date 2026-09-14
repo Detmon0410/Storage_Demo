@@ -1,7 +1,7 @@
 import { AlertTriangle, CheckCircle2, Package, Pencil, Plus, ShieldAlert, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { customerApi, customerLicenseApi, inventoryStockApi, productApi, salesOrderApi } from "../api/resources";
+import { customerApi, customerLicenseApi, inventoryStockApi, licenseApi, productApi, salesOrderApi } from "../api/resources";
 import type { Customer, CustomerLicense, SalesOrder } from "../api/types";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -52,6 +52,7 @@ export function SalesOrdersPage() {
   const customerLicenses = useList(() => customerLicenseApi.list());
   const products = useList(() => productApi.list());
   const inventoryLots = useList(() => inventoryStockApi.list());
+  const licenses = useList(() => licenseApi.list());
   const toast = useToast();
   const [search, setSearch] = useState("");
   const [deliveryFilter, setDeliveryFilter] = useState("");
@@ -122,6 +123,10 @@ export function SalesOrdersPage() {
       if (qty > product.stockQty) {
         blockers.push(t("salesOrder.validation.overStock", { name: product.productName, qty, stock: product.stockQty, unit: product.unit }));
       }
+      const linkedLicense = licenses.find((l) => l.productId != null && String(l.productId) === productId);
+      if (linkedLicense?.status === "EXPIRED") {
+        blockers.push(t("salesOrder.validation.permitExpired"));
+      }
     }
 
     if (selectedCustomer) {
@@ -147,7 +152,7 @@ export function SalesOrdersPage() {
 
     const needsApproval = warnings.length > 0 && !form.approver.trim();
     return { blockers, warnings, needsApproval };
-  }, [quantityByProduct, products, selectedCustomer, validLicensesForCustomer, form.customerLicenseId, form.items, form.approver, orderTotal, t]);
+  }, [quantityByProduct, products, selectedCustomer, validLicensesForCustomer, form.customerLicenseId, form.items, form.approver, orderTotal, licenses, t]);
 
   const canSubmit = validation.blockers.length === 0 && !validation.needsApproval;
 
