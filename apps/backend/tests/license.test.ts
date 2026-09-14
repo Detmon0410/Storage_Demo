@@ -24,6 +24,15 @@ describe("License endpoints", () => {
   let supplierId: number;
 
   beforeAll(async () => {
+    // Defensive cleanup: remove any stray rows left behind by a previously
+    // interrupted run of this test file (e.g. a crashed process that skipped
+    // afterAll), so the singleton-count assertions in company.test.ts stay accurate.
+    await prisma.license.deleteMany({ where: { licenseNo: { startsWith: "LIC-TEST-" } } });
+    await prisma.product.deleteMany({ where: { productCode: { startsWith: "LIC_TEST_PROD_" } } });
+    await prisma.category.deleteMany({ where: { categoryCode: { startsWith: "LIC_TEST_CAT_" } } });
+    await prisma.supplier.deleteMany({ where: { supplierCode: { startsWith: "LIC_TEST_SUP_" } } });
+    await prisma.company.deleteMany({ where: { taxId: { startsWith: "T-LIC-TEST-" } } });
+
     const company = await prisma.company.create({
       data: {
         legalName: "License Test Co., Ltd.",

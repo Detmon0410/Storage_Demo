@@ -3,7 +3,7 @@ import { HttpError } from "../middleware/errorHandler.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const optionalDate = (value: unknown) => (value == null ? undefined : new Date(String(value)));
-const optionalNumber = (value: unknown) => (value == null ? undefined : Number(value));
+const optionalNullableId = (value: unknown) => (value === undefined ? undefined : value === null || value === "" ? null : Number(value));
 
 export const listLicenses = asyncHandler(async (_req, res) => {
   res.json(await LicenseModel.findAll());
@@ -16,9 +16,9 @@ export const getLicense = asyncHandler(async (req, res) => {
 });
 
 export const createLicense = asyncHandler(async (req, res) => {
-  const { licenseNo, licenseType, holderName, category, issueDate, expiryDate, daysRemaining, status } = req.body;
-  if (!licenseNo || !licenseType || !holderName || !category || !issueDate || !expiryDate || daysRemaining == null || !status) {
-    throw new HttpError(400, "licenseNo, licenseType, holderName, category, issueDate, expiryDate, daysRemaining, and status are required");
+  const { licenseNo, licenseType, holderName, category, issueDate, expiryDate, companyId, productId } = req.body;
+  if (!licenseNo || !licenseType || !holderName || !category || !issueDate || !expiryDate) {
+    throw new HttpError(400, "licenseNo, licenseType, holderName, category, issueDate, and expiryDate are required");
   }
   res.status(201).json(
     await LicenseModel.create({
@@ -28,14 +28,14 @@ export const createLicense = asyncHandler(async (req, res) => {
       category,
       issueDate: new Date(issueDate),
       expiryDate: new Date(expiryDate),
-      daysRemaining: Number(daysRemaining),
-      status,
+      companyId: optionalNullableId(companyId) ?? null,
+      productId: optionalNullableId(productId) ?? null,
     }),
   );
 });
 
 export const updateLicense = asyncHandler(async (req, res) => {
-  const { licenseNo, licenseType, holderName, category, issueDate, expiryDate, daysRemaining, status } = req.body;
+  const { licenseNo, licenseType, holderName, category, issueDate, expiryDate, companyId, productId } = req.body;
   res.json(
     await LicenseModel.update(Number(req.params.id), {
       licenseNo,
@@ -44,8 +44,8 @@ export const updateLicense = asyncHandler(async (req, res) => {
       category,
       issueDate: optionalDate(issueDate),
       expiryDate: optionalDate(expiryDate),
-      daysRemaining: optionalNumber(daysRemaining),
-      status,
+      companyId: optionalNullableId(companyId),
+      productId: optionalNullableId(productId),
     }),
   );
 });
