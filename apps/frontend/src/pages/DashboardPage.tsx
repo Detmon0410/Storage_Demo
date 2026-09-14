@@ -1,7 +1,6 @@
 import {
   AlertTriangle,
   ArrowRight,
-  FileCheck2,
   PackageX,
   ShoppingCart,
   Truck,
@@ -31,7 +30,13 @@ export function DashboardPage() {
   const importOrders = useList(() => importOrderApi.list());
   const salesOrders = useList(() => salesOrderApi.list());
 
-  const expiringLicenses = useMemo(() => licenses.filter((l) => l.daysRemaining <= 30), [licenses]);
+  const permitBuckets = useMemo(() => {
+    const buckets: Record<string, number> = { PREPARATION: 0, NOTIFY: 0, WARNING: 0, IMPORTANT_WARNING: 0, EXPIRED: 0 };
+    for (const l of licenses) {
+      if (l.status in buckets) buckets[l.status] += 1;
+    }
+    return buckets;
+  }, [licenses]);
   const creditIssues = useMemo(
     () => customers.filter((c) => c.creditStatus === "OVER_LIMIT" || c.creditStatus === "NO_LICENSE"),
     [customers],
@@ -113,16 +118,27 @@ export function DashboardPage() {
           </div>
 
           <div>
+            <h2 className="mb-3 text-sm font-semibold text-slate-700">{t("dashboard.permit.heading")}</h2>
+            <Card className="p-4">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+                {(["PREPARATION", "NOTIFY", "WARNING", "IMPORTANT_WARNING", "EXPIRED"] as const).map((code) => {
+                  const tone = statusTone(code);
+                  const toneClasses =
+                    tone === "danger" ? "bg-rose-50" : tone === "warning" ? "bg-amber-50" : tone === "info" ? "bg-sky-50" : "bg-slate-50";
+                  return (
+                    <Link key={code} to="/licenses" className={`rounded-lg p-4 ${toneClasses}`}>
+                      <p className="text-2xl font-semibold text-slate-900">{permitBuckets[code]}</p>
+                      <p className="text-sm text-slate-600">{t(`dashboard.permit.bucket.${code}`)}</p>
+                    </Link>
+                  );
+                })}
+              </div>
+            </Card>
+          </div>
+
+          <div>
             <h2 className="mb-3 text-sm font-semibold text-slate-700">{t("dashboard.alertsHeading")}</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <AlertCard
-                icon={FileCheck2}
-                tone="warning"
-                title={t("dashboard.alert.licensesTitle")}
-                count={expiringLicenses.length}
-                description={t("dashboard.alert.licensesDesc")}
-                to="/licenses"
-              />
               <AlertCard
                 icon={Users}
                 tone="danger"
