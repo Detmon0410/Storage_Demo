@@ -13,9 +13,12 @@ const TONE_BY_CODE: Record<string, Tone> = {
   CUSTOMS_CLEARED: "info",
   RECEIVED: "success",
   ISSUE: "danger",
-  // license.status
+  // license.status (permit tiers, Phase 7 — PERMIT-02)
   NORMAL: "success",
-  EXPIRING_SOON: "warning",
+  PREPARATION: "neutral",
+  NOTIFY: "info",
+  WARNING: "warning",
+  IMPORTANT_WARNING: "warning",
   EXPIRED: "danger",
   // customer.creditStatus
   NEAR_LIMIT: "warning",
