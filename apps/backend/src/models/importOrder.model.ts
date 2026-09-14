@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../middleware/errorHandler.js";
+import { assertProductsNotBlockedTx } from "../utils/licenseGate.js";
 import { createStockTransactionTx, reverseAndDeleteByReferenceTx } from "./stockTransaction.model.js";
 import { importOrderStockReference } from "../utils/stockReference.js";
 
@@ -78,6 +79,7 @@ export const ImportOrderModel = {
   }) => {
     const rows = toItemRows(data.items);
     return prisma.$transaction(async (tx) => {
+      await assertProductsNotBlockedTx(tx, data.items.map((i) => i.productId));
       const order = await tx.importOrder.create({
         data: {
           orderNo: data.orderNo,
@@ -125,6 +127,7 @@ export const ImportOrderModel = {
       const existing = await tx.importOrder.findUnique({ where: { importOrderId }, select: { orderNo: true } });
       if (!existing) throw new HttpError(404, "Import order not found");
 
+      await assertProductsNotBlockedTx(tx, items.map((i) => i.productId));
       await reverseAndDeleteByReferenceTx(tx, importOrderStockReference(existing.orderNo));
       await tx.importOrderItem.deleteMany({ where: { importOrderId } });
 
