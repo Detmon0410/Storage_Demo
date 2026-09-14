@@ -32,9 +32,9 @@ export const CustomerLicenseModel = {
   findById: (customerLicenseId: number) =>
     prisma.customerLicense.findUnique({ where: { customerLicenseId }, include: withRelations }),
 
-  create: (data: CustomerLicenseInput) => {
+  create: (data: CustomerLicenseInput, client: Client = prisma) => {
     const actor = data.actor || "System User";
-    return prisma.customerLicense.create({
+    return client.customerLicense.create({
       data: {
         customerId: data.customerId,
         licenseNumber: data.licenseNumber,
@@ -54,14 +54,14 @@ export const CustomerLicenseModel = {
     });
   },
 
-  update: async (customerLicenseId: number, data: Partial<CustomerLicenseInput>) => {
-    const existing = await prisma.customerLicense.findUnique({ where: { customerLicenseId } });
+  update: async (customerLicenseId: number, data: Partial<CustomerLicenseInput>, client: Client = prisma) => {
+    const existing = await client.customerLicense.findUnique({ where: { customerLicenseId } });
     if (!existing) throw new HttpError(404, "Customer license not found");
 
     const actor = data.actor || "System User";
     const statusChanged = data.status != null && data.status !== existing.status;
 
-    return prisma.customerLicense.update({
+    return client.customerLicense.update({
       where: { customerLicenseId },
       data: {
         customerId: data.customerId,

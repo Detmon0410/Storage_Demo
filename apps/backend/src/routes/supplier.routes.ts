@@ -13,6 +13,6 @@ export const supplierRoutes = Router();
 
 supplierRoutes.get("/", requireAuth, requirePermission("SUPPLIER_VIEW"), listSuppliers);
 supplierRoutes.get("/:id", requireAuth, requirePermission("SUPPLIER_VIEW"), getSupplier);
-supplierRoutes.post("/", requireAuth, createSupplier);
-supplierRoutes.put("/:id", requireAuth, updateSupplier);
-supplierRoutes.delete("/:id", requireAuth, deleteSupplier);
+supplierRoutes.post("/", requireAuth, requirePermission("SUPPLIER_CREATE"), createSupplier);
+supplierRoutes.put("/:id", requireAuth, requirePermission("SUPPLIER_EDIT"), updateSupplier);
+supplierRoutes.delete("/:id", requireAuth, requirePermission("SUPPLIER_DELETE"), deleteSupplier);

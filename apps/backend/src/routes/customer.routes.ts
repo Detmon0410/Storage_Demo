@@ -13,6 +13,6 @@ export const customerRoutes = Router();
 
 customerRoutes.get("/", requireAuth, requirePermission("CUSTOMER_VIEW"), listCustomers);
 customerRoutes.get("/:id", requireAuth, requirePermission("CUSTOMER_VIEW"), getCustomer);
-customerRoutes.post("/", requireAuth, createCustomer);
-customerRoutes.put("/:id", requireAuth, updateCustomer);
-customerRoutes.delete("/:id", requireAuth, deleteCustomer);
+customerRoutes.post("/", requireAuth, requirePermission("CUSTOMER_CREATE"), createCustomer);
+customerRoutes.put("/:id", requireAuth, requirePermission("CUSTOMER_EDIT"), updateCustomer);
+customerRoutes.delete("/:id", requireAuth, requirePermission("CUSTOMER_DELETE"), deleteCustomer);

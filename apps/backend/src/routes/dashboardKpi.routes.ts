@@ -13,6 +13,6 @@ export const dashboardKpiRoutes = Router();
 
 dashboardKpiRoutes.get("/", requireAuth, requirePermission("DASHBOARD_VIEW"), listDashboardKpis);
 dashboardKpiRoutes.get("/:id", requireAuth, requirePermission("DASHBOARD_VIEW"), getDashboardKpi);
-dashboardKpiRoutes.post("/", requireAuth, createDashboardKpi);
-dashboardKpiRoutes.put("/:id", requireAuth, updateDashboardKpi);
-dashboardKpiRoutes.delete("/:id", requireAuth, deleteDashboardKpi);
+dashboardKpiRoutes.post("/", requireAuth, requirePermission("DASHBOARD_MANAGE"), createDashboardKpi);
+dashboardKpiRoutes.put("/:id", requireAuth, requirePermission("DASHBOARD_MANAGE"), updateDashboardKpi);
+dashboardKpiRoutes.delete("/:id", requireAuth, requirePermission("DASHBOARD_MANAGE"), deleteDashboardKpi);
