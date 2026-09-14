@@ -7,13 +7,13 @@
 
 ### Authentication (AUTH)
 
-- [ ] **AUTH-01**: User can log in with username/email and password
-- [ ] **AUTH-02**: User can log out, invalidating their session/refresh token
-- [ ] **AUTH-03**: User session persists across browser refresh via short-lived access token + refresh token
-- [ ] **AUTH-04**: All existing API routes require a valid authenticated session (no anonymous access to business data)
-- [ ] **AUTH-05**: Passwords are stored hashed (never plaintext), using a modern hashing algorithm
-- [ ] **AUTH-06**: Login attempts are rate-limited to resist brute-force attacks
-- [ ] **AUTH-07**: CORS is restricted to known frontend origin(s) instead of allowing all origins
+- [x] **AUTH-01**: User can log in with username/email and password
+- [x] **AUTH-02**: User can log out, invalidating their session/refresh token
+- [x] **AUTH-03**: User session persists across browser refresh via short-lived access token + refresh token
+- [x] **AUTH-04**: All existing API routes require a valid authenticated session (no anonymous access to business data)
+- [x] **AUTH-05**: Passwords are stored hashed (never plaintext), using a modern hashing algorithm
+- [x] **AUTH-06**: Login attempts are rate-limited to resist brute-force attacks
+- [x] **AUTH-07**: CORS is restricted to known frontend origin(s) instead of allowing all origins
 
 ### Roles & Permissions (RBAC)
 
@@ -73,6 +73,14 @@
 - [ ] **DOCS-03**: User can export reports to CSV or PDF, filterable by date, customer, supplier, product, status, and warehouse
 - [ ] **DOCS-04**: Dashboard KPIs are calculated from live operational data instead of manually maintained KPI rows
 
+### Company Profile & Permit Deadlines (COMPANY, PERMIT)
+
+- [x] **COMPANY-01**: System stores one Company profile (legal name, Tax ID, address) reused across permits and generated documents instead of being re-typed
+- [x] **PERMIT-01**: A `License` record links to the Company and, optionally, to a specific Product; existing unlinked licenses remain valid
+- [x] **PERMIT-02**: Permit status auto-derives from days-to-expiry using tiers: 120d = Preparation for renewal, 90d = Notify, 60d = Warning, 30d = Important warning, 0d = Expired
+- [x] **PERMIT-03**: Dashboard surfaces permits grouped by threshold bucket (120/90/60/30 days, expired) instead of a single "expiring soon" list
+- [x] **PERMIT-04**: An expired permit is visibly flagged (red), and if linked to a specific product, blocks new import/sales orders for that product until resolved
+
 ## v2 Requirements
 
 Deferred to a future milestone once v1 data models are live and validated.
@@ -101,13 +109,13 @@ Deferred to a future milestone once v1 data models are live and validated.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
-| AUTH-03 | Phase 1 | Pending |
-| AUTH-04 | Phase 1 | Pending |
-| AUTH-05 | Phase 1 | Pending |
-| AUTH-06 | Phase 1 | Pending |
-| AUTH-07 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Done |
+| AUTH-02 | Phase 1 | Done |
+| AUTH-03 | Phase 1 | Done |
+| AUTH-04 | Phase 1 | Done |
+| AUTH-05 | Phase 1 | Done |
+| AUTH-06 | Phase 1 | Done |
+| AUTH-07 | Phase 1 | Done |
 | RBAC-01 | Phase 2 | Pending |
 | RBAC-02 | Phase 2 | Pending |
 | RBAC-03 | Phase 2 | Pending |
@@ -145,12 +153,21 @@ Deferred to a future milestone once v1 data models are live and validated.
 | DOCS-02 | Phase 6 | Pending |
 | DOCS-03 | Phase 6 | Pending |
 | DOCS-04 | Phase 6 | Pending |
+| COMPANY-01 | Phase 7 | Done |
+| PERMIT-01 | Phase 7 | Done |
+| PERMIT-02 | Phase 7 | Done |
+| PERMIT-03 | Phase 7 | Done |
+| PERMIT-04 | Phase 7 | Done |
 
 **Coverage:**
-- v1 requirements: 44 total
-- Mapped to phases: 44
+- v1 requirements: 49 total
+- Mapped to phases: 49
 - Unmapped: 0 ✓
+- Done: 12 (AUTH: 7, COMPANY/PERMIT: 5) — Phases 1 and 7
+- Pending: 37 — Phases 2, 3, 4, 5, 6 not yet executed (Phase 2 is planned; Phases 3-6 not yet planned)
+
+**Note:** Phases 7-8 (Company/Permit Deadlines; Import Documents/Quotation/Billing) were added after this table's original phase numbering, via `spec-gap-closure-plan.md` (2026-09-11), to close gaps found against `thailand_alcohol_import_sales_system_overview.pdf`. Phase 8 has no requirement IDs registered in this file yet — it currently only exists as a scope note in the gap-closure plan.
 
 ---
 *Requirements defined: 2026-09-03*
-*Last updated: 2026-09-03 after initial definition*
+*Last updated: 2026-09-14 after Phase 7 execution completed*
