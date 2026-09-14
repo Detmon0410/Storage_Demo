@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../middleware/errorHandler.js";
+import { assertProductsNotBlockedTx } from "../utils/licenseGate.js";
 import { isLicenseValid } from "./customerLicense.model.js";
 import { createStockTransactionTx, reverseAndDeleteByReferenceTx } from "./stockTransaction.model.js";
 import { salesOrderStockReference } from "../utils/stockReference.js";
@@ -94,6 +95,7 @@ export const SalesOrderModel = {
   }) => {
     const rows = toItemRows(data.items);
     return prisma.$transaction(async (tx) => {
+      await assertProductsNotBlockedTx(tx, data.items.map((i) => i.productId));
       const licenseFields = await validateAndSnapshotLicense(tx, data.customerId, data.customerLicenseId);
 
       const order = await tx.salesOrder.create({
@@ -143,6 +145,7 @@ export const SalesOrderModel = {
 
     const rows = toItemRows(items);
     return prisma.$transaction(async (tx) => {
+      await assertProductsNotBlockedTx(tx, items.map((i) => i.productId));
       const existing = await tx.salesOrder.findUnique({ where: { salesOrderId }, select: { orderNo: true, customerId: true } });
       if (!existing) throw new HttpError(404, "Sales order not found");
 
