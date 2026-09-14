@@ -1,8 +1,8 @@
 import { AlertTriangle, Pencil, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { licenseApi } from "../api/resources";
-import type { License } from "../api/types";
+import { companyApi, licenseApi, productApi } from "../api/resources";
+import type { Company, License } from "../api/types";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
@@ -13,6 +13,7 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { SearchInput } from "../components/ui/SearchInput";
 import { EmptyState, ErrorState, LoadingState } from "../components/ui/States";
 import { useToast } from "../components/ui/Toast";
+import { useList } from "../hooks/useList";
 import { useResource } from "../hooks/useResource";
 import { formatDate, toDateInputValue } from "../lib/format";
 import { statusTone } from "../lib/status";
@@ -24,8 +25,8 @@ type FormState = {
   category: string;
   issueDate: string;
   expiryDate: string;
-  daysRemaining: string;
-  status: string;
+  companyId: string;
+  productId: string;
 };
 
 const emptyForm: FormState = {
@@ -35,18 +36,11 @@ const emptyForm: FormState = {
   category: "IMPORT",
   issueDate: "",
   expiryDate: "",
-  daysRemaining: "0",
-  status: "NORMAL",
+  companyId: "",
+  productId: "",
 };
 
-const STATUS_OPTIONS = ["NORMAL", "EXPIRING_SOON", "EXPIRED"];
 const CATEGORY_OPTIONS = ["IMPORT", "SALES"];
-
-function computeStatus(daysRemaining: number): string {
-  if (daysRemaining < 0) return "EXPIRED";
-  if (daysRemaining <= 30) return "EXPIRING_SOON";
-  return "NORMAL";
-}
 
 export function LicensesPage() {
   const { t } = useTranslation();
@@ -57,6 +51,11 @@ export function LicensesPage() {
   const [editing, setEditing] = useState<License | null | undefined>(undefined);
   const [deleting, setDeleting] = useState<License | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [company, setCompany] = useState<Company | null>(null);
+  useEffect(() => {
+    companyApi.get().then(setCompany);
+  }, []);
+  const products = useList(() => productApi.list());
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -75,7 +74,7 @@ export function LicensesPage() {
   const expired = useMemo(() => rows.filter((r) => r.daysRemaining < 0), [rows]);
 
   const openCreate = () => {
-    setForm(emptyForm);
+    setForm({ ...emptyForm, companyId: company ? String(company.companyId) : "" });
     setEditing(null);
   };
 
@@ -87,20 +86,13 @@ export function LicensesPage() {
       category: row.category,
       issueDate: toDateInputValue(row.issueDate),
       expiryDate: toDateInputValue(row.expiryDate),
-      daysRemaining: String(row.daysRemaining),
-      status: row.status,
+      companyId: row.companyId != null ? String(row.companyId) : "",
+      productId: row.productId != null ? String(row.productId) : "",
     });
     setEditing(row);
   };
 
   const closeModal = () => setEditing(undefined);
-
-  const handleExpiryChange = (expiryDate: string) => {
-    const days = expiryDate
-      ? Math.round((new Date(expiryDate).getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000)
-      : 0;
-    setForm({ ...form, expiryDate, daysRemaining: String(days), status: computeStatus(days) });
-  };
 
   const handleSubmit = async () => {
     if (!form.licenseNo || !form.holderName || !form.issueDate || !form.expiryDate) {
@@ -115,8 +107,8 @@ export function LicensesPage() {
         category: form.category,
         issueDate: form.issueDate,
         expiryDate: form.expiryDate,
-        daysRemaining: Number(form.daysRemaining || 0),
-        status: form.status,
+        companyId: form.companyId ? Number(form.companyId) : null,
+        productId: form.productId ? Number(form.productId) : null,
       };
       if (editing) {
         await update(editing.licenseId, payload);
@@ -274,16 +266,20 @@ export function LicensesPage() {
               <TextInput type="date" value={form.issueDate} onChange={(e) => setForm({ ...form, issueDate: e.target.value })} />
             </Field>
             <Field label={t("license.field.expiryDate")} required helperText={t("license.field.expiryHelp")}>
-              <TextInput type="date" value={form.expiryDate} onChange={(e) => handleExpiryChange(e.target.value)} />
+              <TextInput type="date" value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })} />
             </Field>
-            <Field label={t("license.field.daysRemaining")}>
-              <TextInput type="number" value={form.daysRemaining} onChange={(e) => setForm({ ...form, daysRemaining: e.target.value })} />
+            <Field label={t("license.field.company")}>
+              <SelectField value={form.companyId} onChange={(e) => setForm({ ...form, companyId: e.target.value })}>
+                <option value="">-- None --</option>
+                {company && <option value={company.companyId}>{company.legalName}</option>}
+              </SelectField>
             </Field>
-            <Field label={t("license.field.status")}>
-              <SelectField value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                {STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>
-                    {t(`status.license.${s}`)}
+            <Field label={t("license.field.product")} helperText={t("license.field.productPlaceholder")}>
+              <SelectField value={form.productId} onChange={(e) => setForm({ ...form, productId: e.target.value })}>
+                <option value="">{t("license.field.productPlaceholder")}</option>
+                {products.map((p) => (
+                  <option key={p.productId} value={p.productId}>
+                    {p.productName}
                   </option>
                 ))}
               </SelectField>
