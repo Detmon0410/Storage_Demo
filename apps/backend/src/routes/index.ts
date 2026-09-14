@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { auditLogRoutes } from "./auditLog.routes.js";
 import { authRoutes } from "./auth.routes.js";
 import { categoryRoutes } from "./category.routes.js";
 import { companyRoutes } from "./company.routes.js";
@@ -28,3 +29,4 @@ apiRoutes.use("/customer-licenses", customerLicenseRoutes);
 apiRoutes.use("/sales-orders", salesOrderRoutes);
 apiRoutes.use("/inventory-stocks", inventoryStockRoutes);
 apiRoutes.use("/dashboard-kpis", dashboardKpiRoutes);
+apiRoutes.use("/audit-logs", auditLogRoutes);
