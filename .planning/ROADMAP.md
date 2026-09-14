@@ -69,7 +69,7 @@ Plans:
 - [x] 02-09-PLAN.md — Write-permission + audit wrap batch B: product/inventoryStock/stockTransaction (RBAC-04/AUDIT-01)
 - [x] 02-10-PLAN.md — Order write+audit, approve/reject endpoints, no-self-approval, restrict generic PUT (RBAC-04/AUDIT-01/02)
 - [x] 02-11-PLAN.md — User management backend: CRUD, role assignment, self-lockout guard (RBAC-02/05)
-- [ ] 02-12-PLAN.md — GET /api/auth/me + AuthContext roles/permissions + nav gating (RBAC-03/06)
+- [x] 02-12-PLAN.md — GET /api/auth/me + AuthContext roles/permissions + nav gating (RBAC-03/06)
 - [ ] 02-13-PLAN.md — Users page (multi-role checkboxes, deactivate/reactivate) + checkpoint (RBAC-05)
 - [ ] 02-14-PLAN.md — Audit Log viewer page (filters + detail modal) + checkpoint (AUDIT-04)
 
