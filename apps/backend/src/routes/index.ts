@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authRoutes } from "./auth.routes.js";
 import { categoryRoutes } from "./category.routes.js";
+import { companyRoutes } from "./company.routes.js";
 import { customerRoutes } from "./customer.routes.js";
 import { customerLicenseRoutes } from "./customerLicense.routes.js";
 import { dashboardKpiRoutes } from "./dashboardKpi.routes.js";
@@ -16,6 +17,7 @@ export const apiRoutes = Router();
 
 apiRoutes.use("/auth", authRoutes);
 apiRoutes.use("/categories", categoryRoutes);
+apiRoutes.use("/companies", companyRoutes);
 apiRoutes.use("/suppliers", supplierRoutes);
 apiRoutes.use("/products", productRoutes);
 apiRoutes.use("/stock-transactions", stockTransactionRoutes);
