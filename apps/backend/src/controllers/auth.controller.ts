@@ -5,6 +5,8 @@ import { HttpError } from "../middleware/errorHandler.js";
 import { UserModel } from "../models/user.model.js";
 import { RefreshTokenModel } from "../models/refreshToken.model.js";
 import { signAccessToken } from "../lib/jwt.js";
+import { prisma } from "../lib/prisma.js";
+import { AuditLogModel } from "../lib/audit.js";
 import type { AuthenticatedRequest } from "../middleware/auth.js";
 
 const REFRESH_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days — fixed-expiry, no rotation (Claude's discretion per CONTEXT.md)
@@ -42,6 +44,14 @@ export const login = asyncHandler(async (req, res) => {
   const accessToken = signAccessToken({ userId: user.id });
   const refreshToken = await RefreshTokenModel.create(user.id, REFRESH_TTL_MS);
   res.cookie(REFRESH_COOKIE_NAME, refreshToken, REFRESH_COOKIE_OPTIONS);
+  await AuditLogModel.record(prisma, {
+    entity: "User",
+    entityId: user.id,
+    action: "login",
+    userId: user.id,
+    before: null,
+    after: { username: user.username },
+  });
   res.json({ accessToken, user: { id: user.id, username: user.username } });
 });
 
@@ -57,6 +67,16 @@ export const refresh = asyncHandler(async (req, res) => {
 export const logout = asyncHandler(async (req: AuthenticatedRequest, res) => {
   const raw = req.cookies?.[REFRESH_COOKIE_NAME];
   if (raw) await RefreshTokenModel.revoke(raw);
+  if (raw && req.userId) {
+    await AuditLogModel.record(prisma, {
+      entity: "User",
+      entityId: req.userId,
+      action: "logout",
+      userId: req.userId,
+      before: null,
+      after: null,
+    });
+  }
   res.clearCookie(REFRESH_COOKIE_NAME, { path: "/api/auth" });
   res.status(204).end();
 });
