@@ -2,10 +2,10 @@ import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { app } from "../src/app.js";
 import { cleanupTestUsers, prisma } from "./setup.js";
-import { createTestUser } from "./fixtures/testUser.js";
+import { createTestUserWithRoles } from "./fixtures/testUser.js";
 
 async function authToken(suffix: string) {
-  const { username, password } = await createTestUser(suffix);
+  const { username, password } = await createTestUserWithRoles(suffix, ["SYSTEM_ADMIN"]);
   const loginRes = await request(app).post("/api/auth/login").send({ username, password });
   return loginRes.body.accessToken as string;
 }
