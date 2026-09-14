@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 4: Approval Workflow** - Orders move through a real DRAFT/PENDING_APPROVAL/APPROVED/REJECTED/CANCELLED status machine, self-approval is blocked, and stock deducts only on approval
 - [ ] **Phase 5: Liquor Tax & Compliance Data** - Products and import orders capture HS code, excise, ABV, landed cost inputs, and permit/document references; incomplete products are flagged
 - [ ] **Phase 6: Documents & Reporting** - Users generate invoices, delivery notes, picking lists, and reports; dashboard KPIs compute from live data
-- [ ] **Phase 7: Company Profile & Permit Deadlines** - A single Company profile backs the system's licenses and documents; permits auto-status on a 120/90/60/30-day notification schedule and block product transactions when expired
+- [x] **Phase 7: Company Profile & Permit Deadlines** - A single Company profile backs the system's licenses and documents; permits auto-status on a 120/90/60/30-day notification schedule and block product transactions when expired
 
 ## Phase Details
 
