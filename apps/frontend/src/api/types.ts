@@ -195,3 +195,18 @@ export interface DashboardKpi {
   unit: string;
   monthTrend: string;
 }
+
+export type RoleCode =
+  | "SYSTEM_ADMIN"
+  | "MANAGER_APPROVER"
+  | "IMPORT_COMPLIANCE_OFFICER"
+  | "WAREHOUSE_DISTRIBUTION_OFFICER"
+  | "SALES_OFFICER"
+  | "FINANCE_ACCOUNTING_OFFICER";
+
+export interface User {
+  id: number;
+  username: string;
+  status: "ACTIVE" | "INACTIVE";
+  roles: RoleCode[];
+}
