@@ -255,12 +255,12 @@ const importOrders = [
 // Each customer's liquor sales license lives in the dedicated CustomerLicense table below
 // (see `customerLicenses`), managed separately from the Customer master record.
 const licenses = [
-  ["LIC-IMP-0011", "Liquor Wholesale Business License", "Tokyo Liquor Import Co., Ltd.", "IMPORT", "2025-01-10", "2026-01-09", -235, "EXPIRED"],
-  ["LIC-IMP-0012", "Liquor Wholesale Business License (Category 2)", "Tokyo Liquor Import Co., Ltd.", "IMPORT", "2025-09-01", "2026-08-31", -2, "EXPIRED"],
-  ["LIC-IMP-0013", "Liquor Import Permit - Kingdom Entry", "Tokyo Liquor Import Co., Ltd.", "IMPORT", "2026-04-01", "2027-03-31", 210, "NORMAL"],
-  ["LIC-IMP-0014", "Imported Liquor Label Approval Certificate", "Tokyo Liquor Import Co., Ltd.", "IMPORT", "2026-03-15", "2026-09-12", 10, "EXPIRING_SOON"],
-  ["LIC-IMP-0015", "Import Completion Evidence Filing", "Tokyo Liquor Import Co., Ltd.", "IMPORT", "2026-06-01", "2028-05-31", 637, "NORMAL"],
-  ["LIC-IMP-0016", "Excise Stamp Control Permit", "Tokyo Liquor Import Co., Ltd.", "IMPORT", "2026-08-20", "2026-10-02", 30, "EXPIRING_SOON"],
+  ["LIC-IMP-0011", "Liquor Wholesale Business License", "Tokyo Liquor Import Co., Ltd.", "IMPORT", "2025-01-10", "2026-01-09"],
+  ["LIC-IMP-0012", "Liquor Wholesale Business License (Category 2)", "Tokyo Liquor Import Co., Ltd.", "IMPORT", "2025-09-01", "2026-08-31"],
+  ["LIC-IMP-0013", "Liquor Import Permit - Kingdom Entry", "Tokyo Liquor Import Co., Ltd.", "IMPORT", "2026-04-01", "2027-03-31"],
+  ["LIC-IMP-0014", "Imported Liquor Label Approval Certificate", "Tokyo Liquor Import Co., Ltd.", "IMPORT", "2026-03-15", "2026-09-12"],
+  ["LIC-IMP-0015", "Import Completion Evidence Filing", "Tokyo Liquor Import Co., Ltd.", "IMPORT", "2026-06-01", "2028-05-31"],
+  ["LIC-IMP-0016", "Excise Stamp Control Permit", "Tokyo Liquor Import Co., Ltd.", "IMPORT", "2026-08-20", "2026-10-02"],
 ] as const;
 
 // Credit limits/balances are in JPY, sized for small-to-mid Japanese liquor retailers,
@@ -638,9 +638,17 @@ async function main() {
     },
   });
 
-  for (const [licenseNo, licenseType, holderName, category, issueDate, expiryDate, daysRemaining, status] of licenses) {
+  for (const [licenseNo, licenseType, holderName, category, issueDate, expiryDate] of licenses) {
     await prisma.license.create({
-      data: { licenseNo, licenseType, holderName, category, issueDate: date(issueDate), expiryDate: date(expiryDate), daysRemaining, status },
+      data: {
+        licenseNo,
+        licenseType,
+        holderName,
+        category,
+        issueDate: date(issueDate),
+        expiryDate: date(expiryDate),
+        companyId: company.companyId,
+      },
     });
   }
 
