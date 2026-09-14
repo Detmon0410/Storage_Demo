@@ -2,7 +2,7 @@ import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { app } from "../src/app.js";
 import { cleanupTestUsers, prisma } from "./setup.js";
-import { createTestUser } from "./fixtures/testUser.js";
+import { createTestUserWithRoles } from "./fixtures/testUser.js";
 
 describe("Sales order backend license-expiry blocking", () => {
   let accessToken: string;
@@ -16,7 +16,7 @@ describe("Sales order backend license-expiry blocking", () => {
   const createdLicenseIds: number[] = [];
 
   beforeAll(async () => {
-    const { username, password } = await createTestUser("salesorder_license_block");
+    const { username, password } = await createTestUserWithRoles("salesorder_license_block", ["SALES_OFFICER"]);
     const loginRes = await request(app).post("/api/auth/login").send({ username, password });
     accessToken = loginRes.body.accessToken;
 
