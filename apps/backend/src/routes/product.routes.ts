@@ -13,6 +13,6 @@ export const productRoutes = Router();
 
 productRoutes.get("/", requireAuth, requirePermission("PRODUCT_VIEW"), listProducts);
 productRoutes.get("/:id", requireAuth, requirePermission("PRODUCT_VIEW"), getProduct);
-productRoutes.post("/", requireAuth, createProduct);
-productRoutes.put("/:id", requireAuth, updateProduct);
-productRoutes.delete("/:id", requireAuth, deleteProduct);
+productRoutes.post("/", requireAuth, requirePermission("PRODUCT_CREATE"), createProduct);
+productRoutes.put("/:id", requireAuth, requirePermission("PRODUCT_EDIT"), updateProduct);
+productRoutes.delete("/:id", requireAuth, requirePermission("PRODUCT_DELETE"), deleteProduct);

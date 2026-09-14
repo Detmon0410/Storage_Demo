@@ -13,6 +13,6 @@ export const inventoryStockRoutes = Router();
 
 inventoryStockRoutes.get("/", requireAuth, requirePermission("INVENTORY_VIEW"), listInventoryStocks);
 inventoryStockRoutes.get("/:id", requireAuth, requirePermission("INVENTORY_VIEW"), getInventoryStock);
-inventoryStockRoutes.post("/", requireAuth, createInventoryStock);
-inventoryStockRoutes.put("/:id", requireAuth, updateInventoryStock);
-inventoryStockRoutes.delete("/:id", requireAuth, deleteInventoryStock);
+inventoryStockRoutes.post("/", requireAuth, requirePermission("INVENTORY_CREATE"), createInventoryStock);
+inventoryStockRoutes.put("/:id", requireAuth, requirePermission("INVENTORY_EDIT"), updateInventoryStock);
+inventoryStockRoutes.delete("/:id", requireAuth, requirePermission("INVENTORY_DELETE"), deleteInventoryStock);
