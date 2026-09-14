@@ -15,6 +15,7 @@ import { ProductsPage } from "./pages/ProductsPage";
 import { SalesOrdersPage } from "./pages/SalesOrdersPage";
 import { StockTransactionsPage } from "./pages/StockTransactionsPage";
 import { SuppliersPage } from "./pages/SuppliersPage";
+import { UsersPage } from "./pages/UsersPage";
 
 const routerBasename = import.meta.env.BASE_URL === "/" ? undefined : import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -38,6 +39,7 @@ function App() {
                 <Route path="/licenses" element={<LicensesPage />} />
                 <Route path="/customers" element={<CustomersPage />} />
                 <Route path="/sales-orders" element={<SalesOrdersPage />} />
+                <Route path="/users" element={<UsersPage />} />
               </Route>
             </Route>
           </Routes>

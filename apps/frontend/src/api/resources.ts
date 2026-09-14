@@ -9,9 +9,11 @@ import type {
   InventoryStock,
   License,
   Product,
+  RoleCode,
   SalesOrder,
   StockTransaction,
   Supplier,
+  User,
 } from "./types";
 
 export const companyApi = {
@@ -36,3 +38,16 @@ export const renewCustomerLicense = (
 export const salesOrderApi = createResourceApi<SalesOrder>("/sales-orders");
 export const inventoryStockApi = createResourceApi<InventoryStock>("/inventory-stocks");
 export const dashboardKpiApi = createResourceApi<DashboardKpi>("/dashboard-kpis");
+
+export const userApi = {
+  list: () => request<User[]>("/users"),
+  get: (id: number) => request<User>(`/users/${id}`),
+  create: (body: { username: string; password: string; status: string; roleCodes: RoleCode[] }) =>
+    request<User>("/users", { method: "POST", body: JSON.stringify(body) }),
+  update: (id: number, body: { username: string; status: string }) =>
+    request<User>(`/users/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deactivate: (id: number) => request<User>(`/users/${id}/deactivate`, { method: "POST" }),
+  reactivate: (id: number) => request<User>(`/users/${id}/reactivate`, { method: "POST" }),
+  assignRoles: (id: number, roleCodes: RoleCode[]) =>
+    request<User>(`/users/${id}/roles`, { method: "PUT", body: JSON.stringify({ roleCodes }) }),
+};
