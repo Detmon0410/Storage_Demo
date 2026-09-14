@@ -1,6 +1,7 @@
 import {
   ArrowLeftRight,
   Boxes,
+  Building2,
   FileCheck2,
   Factory,
   LayoutDashboard,
@@ -46,7 +47,10 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     titleKey: "nav.group.compliance",
-    items: [{ to: "/licenses", labelKey: "nav.item.licenses", icon: FileCheck2 }],
+    items: [
+      { to: "/company", labelKey: "nav.item.company", icon: Building2 },
+      { to: "/licenses", labelKey: "nav.item.licenses", icon: FileCheck2 },
+    ],
   },
   {
     titleKey: "nav.group.sales",

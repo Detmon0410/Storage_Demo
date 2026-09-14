@@ -33,6 +33,7 @@ export const en = {
       categories: "Categories",
       inventoryStocks: "Inventory Lots",
       stockTransactions: "Stock Transactions",
+      company: "Company",
       licenses: "Licenses",
       customers: "Customers",
       salesOrders: "Sales Orders",
