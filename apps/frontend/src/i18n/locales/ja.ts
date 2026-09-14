@@ -35,6 +35,7 @@ export const ja: TranslationSchema = {
       categories: "カテゴリー",
       inventoryStocks: "在庫ロット",
       stockTransactions: "在庫入出庫",
+      company: "会社情報",
       licenses: "許可証",
       customers: "得意先",
       salesOrders: "販売注文",
