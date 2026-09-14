@@ -73,6 +73,10 @@ export const createSalesOrder = asyncHandler(async (req: AuthenticatedRequest, r
 export const updateSalesOrder = asyncHandler(async (req: AuthenticatedRequest, res) => {
   const { orderNo, customerId, customerLicenseId, deliveryStatus, invoiceNo, approver, items } = req.body;
 
+  if (deliveryStatus === "APPROVED" || deliveryStatus === "REJECTED") {
+    throw new HttpError(400, "Use the dedicated approve/reject endpoint to change status to APPROVED or REJECTED");
+  }
+
   const salesOrderId = Number(req.params.id);
   const before = await SalesOrderModel.findById(salesOrderId);
   if (!before) throw new HttpError(404, "Sales order not found");

@@ -76,6 +76,10 @@ export const updateImportOrder = asyncHandler(async (req: AuthenticatedRequest, 
   const { orderNo, supplierId, country, incoterms, orderDate, etaDate, status, approver, customsEntryNo, items } =
     req.body;
 
+  if (status === "APPROVED" || status === "REJECTED") {
+    throw new HttpError(400, "Use the dedicated approve/reject endpoint to change status to APPROVED or REJECTED");
+  }
+
   const importOrderId = Number(req.params.id);
   const before = await ImportOrderModel.findById(importOrderId);
   if (!before) throw new HttpError(404, "Import order not found");
