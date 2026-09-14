@@ -1,5 +1,7 @@
 import { createResourceApi, request } from "./client";
 import type {
+  AuditLog,
+  AuditLogFilter,
   Category,
   Company,
   Customer,
@@ -50,4 +52,17 @@ export const userApi = {
   reactivate: (id: number) => request<User>(`/users/${id}/reactivate`, { method: "POST" }),
   assignRoles: (id: number, roleCodes: RoleCode[]) =>
     request<User>(`/users/${id}/roles`, { method: "PUT", body: JSON.stringify({ roleCodes }) }),
+};
+
+export const auditLogApi = {
+  list: (filter: AuditLogFilter = {}) => {
+    const params = new URLSearchParams();
+    if (filter.entity) params.set("entity", filter.entity);
+    if (filter.userId != null) params.set("userId", String(filter.userId));
+    if (filter.action) params.set("action", filter.action);
+    if (filter.from) params.set("from", filter.from);
+    if (filter.to) params.set("to", filter.to);
+    const qs = params.toString();
+    return request<AuditLog[]>(`/audit-logs${qs ? `?${qs}` : ""}`);
+  },
 };
