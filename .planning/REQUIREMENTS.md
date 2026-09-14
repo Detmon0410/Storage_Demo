@@ -81,6 +81,27 @@
 - [x] **PERMIT-03**: Dashboard surfaces permits grouped by threshold bucket (120/90/60/30 days, expired) instead of a single "expiring soon" list
 - [x] **PERMIT-04**: An expired permit is visibly flagged (red), and if linked to a specific product, blocks new import/sales orders for that product until resolved
 
+### Import Documents & Shipment Details (SHIPMENT)
+
+- [ ] **SHIPMENT-01**: `ImportOrder` captures ETD, B/L/AWB number, and container number
+- [ ] **SHIPMENT-02**: A shipment supports file/attachment upload (invoice, packing list, B/L, CO, import declaration, tax documents) linked to it, stored on local disk
+- [ ] **SHIPMENT-03**: A required-document checklist is generated at shipment creation; missing required documents are visibly flagged before the shipment can proceed
+- [ ] **SHIPMENT-04**: Uploaded documents are categorized and named by shipment number and document type
+
+### Quotation & Picking (QUOTE)
+
+- [ ] **QUOTE-01**: System supports a `Quotation` entity preceding `SalesOrder` in the sales sequence (quotation → order)
+- [ ] **QUOTE-02**: A Quotation can be converted into a SalesOrder without re-entering line items
+- [ ] **QUOTE-03**: SalesOrder supports a picking/allocation step between APPROVED and shipped, recording who picked the order and when
+
+### Billing, Payment & Receivables (BILLING)
+
+- [ ] **BILLING-01**: System stores `Invoice` records (invoice date, due date, linked sales order) replacing the bare `invoiceNo` string
+- [ ] **BILLING-02**: System stores `Payment` records (payment date, amount, method) linked to an Invoice
+- [ ] **BILLING-03**: System computes outstanding balance and delinquency status per invoice from recorded payments
+- [ ] **BILLING-04**: `Customer.currentBalance` is derived from outstanding invoices, not manually maintained
+- [ ] **BILLING-05**: Accounts-receivable aging (current / 30 / 60 / 90+ days overdue) is available per customer
+
 ## v2 Requirements
 
 Deferred to a future milestone once v1 data models are live and validated.
@@ -158,16 +179,28 @@ Deferred to a future milestone once v1 data models are live and validated.
 | PERMIT-02 | Phase 7 | Done |
 | PERMIT-03 | Phase 7 | Done |
 | PERMIT-04 | Phase 7 | Done |
+| SHIPMENT-01 | Phase 8 | Pending |
+| SHIPMENT-02 | Phase 8 | Pending |
+| SHIPMENT-03 | Phase 8 | Pending |
+| SHIPMENT-04 | Phase 8 | Pending |
+| QUOTE-01 | Phase 8 | Pending |
+| QUOTE-02 | Phase 8 | Pending |
+| QUOTE-03 | Phase 8 | Pending |
+| BILLING-01 | Phase 8 | Pending |
+| BILLING-02 | Phase 8 | Pending |
+| BILLING-03 | Phase 8 | Pending |
+| BILLING-04 | Phase 8 | Pending |
+| BILLING-05 | Phase 8 | Pending |
 
 **Coverage:**
-- v1 requirements: 49 total
-- Mapped to phases: 49
+- v1 requirements: 61 total (49 original + 12 added for Phase 8, from `spec-gap-closure-plan.md`)
+- Mapped to phases: 61
 - Unmapped: 0 ✓
 - Done: 12 (AUTH: 7, COMPANY/PERMIT: 5) — Phases 1 and 7
-- Pending: 37 — Phases 2, 3, 4, 5, 6 not yet executed (Phase 2 is planned; Phases 3-6 not yet planned)
+- Pending: 49 — Phases 2, 3, 4, 5, 6, 8 not yet executed (Phase 2 is planned; Phases 3-6, 8 not yet planned)
 
-**Note:** Phases 7-8 (Company/Permit Deadlines; Import Documents/Quotation/Billing) were added after this table's original phase numbering, via `spec-gap-closure-plan.md` (2026-09-11), to close gaps found against `thailand_alcohol_import_sales_system_overview.pdf`. Phase 8 has no requirement IDs registered in this file yet — it currently only exists as a scope note in the gap-closure plan.
+**Note:** Phases 7-8 were added after this table's original phase numbering, via `spec-gap-closure-plan.md` (2026-09-11), to close gaps found against `thailand_alcohol_import_sales_system_overview.pdf`. Phase 7's requirements (COMPANY-01, PERMIT-01..04) were registered and are now done. Phase 8's requirements (SHIPMENT, QUOTE, BILLING groups above) are newly registered as of 2026-09-14 — not yet planned or executed.
 
 ---
 *Requirements defined: 2026-09-03*
-*Last updated: 2026-09-14 after Phase 7 execution completed*
+*Last updated: 2026-09-14 — Phase 7 marked done; SHIPMENT/QUOTE/BILLING (Phase 8) requirements added from `spec-gap-closure-plan.md`*
