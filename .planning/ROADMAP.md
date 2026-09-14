@@ -70,7 +70,7 @@ Plans:
 - [x] 02-10-PLAN.md — Order write+audit, approve/reject endpoints, no-self-approval, restrict generic PUT (RBAC-04/AUDIT-01/02)
 - [x] 02-11-PLAN.md — User management backend: CRUD, role assignment, self-lockout guard (RBAC-02/05)
 - [x] 02-12-PLAN.md — GET /api/auth/me + AuthContext roles/permissions + nav gating (RBAC-03/06)
-- [ ] 02-13-PLAN.md — Users page (multi-role checkboxes, deactivate/reactivate) + checkpoint (RBAC-05)
+- [x] 02-13-PLAN.md — Users page (multi-role checkboxes, deactivate/reactivate) + checkpoint (RBAC-05)
 - [ ] 02-14-PLAN.md — Audit Log viewer page (filters + detail modal) + checkpoint (AUDIT-04)
 
 ### Phase 3: Backend Enforcement & Lot/Batch Stock Control
