@@ -22,3 +22,21 @@ isolation, confirming plan 02-06 did not introduce a regression.
 
 **Status:** Deferred — logged for phase-level test-infrastructure follow-up (e.g. serializing
 rate-limit-sensitive tests or resetting rate-limiter state between test files).
+
+## Recurrence during plan 02-09 full-suite verification
+
+**Found during:** Plan 02-09 full-suite verification (`pnpm exec vitest run`)
+
+**Symptom:** `tests/audit.query.test.ts` (1 test) and `tests/importOrder.license-block.test.ts`
+(3 tests) failed with the same class of symptom described above (a stray `undefined` unique-key
+lookup in `audit.query.test.ts`'s own cleanup, and 401s instead of expected 400/201 in
+`importOrder.license-block.test.ts`) when run as part of the full suite. Neither file was touched
+by plan 02-09 (which only modified `product`/`inventoryStock`/`stockTransaction`
+controllers/routes and added `audit.crud.batchB.test.ts` /
+`rbac.enforcement.writes.batchB.test.ts`).
+
+**Action taken:** Verified both files pass cleanly in isolation
+(`pnpm exec vitest run tests/audit.query.test.ts tests/importOrder.license-block.test.ts`
+→ 7/7 pass). Confirms plan 02-09 did not introduce a regression; not fixed, per scope boundary.
+Likely aggravated by this wave's parallel worktree executors (02-08/02-09/02-10) sharing one
+test database concurrently.
