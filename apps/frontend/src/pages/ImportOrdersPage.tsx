@@ -1,7 +1,7 @@
-import { Package, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Package, Pencil, Plus, ShieldAlert, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { importOrderApi, productApi, supplierApi } from "../api/resources";
+import { importOrderApi, licenseApi, productApi, supplierApi } from "../api/resources";
 import type { ImportOrder, ImportOrderItem } from "../api/types";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -56,6 +56,7 @@ export function ImportOrdersPage() {
   );
   const suppliers = useList(() => supplierApi.list());
   const products = useList(() => productApi.list());
+  const licenses = useList(() => licenseApi.list());
   const toast = useToast();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -84,6 +85,18 @@ export function ImportOrdersPage() {
   const itemsSubtotal = form.items.reduce((sum, item) => sum + itemSubtotal(item), 0);
   const itemsTax = form.items.reduce((sum, item) => sum + itemTax(item), 0);
   const itemsTotal = itemsSubtotal + itemsTax;
+
+  const validation = useMemo(() => {
+    const blockers: string[] = [];
+    const productIds = new Set(form.items.map((item) => item.productId).filter(Boolean));
+    for (const productId of productIds) {
+      const linkedLicense = licenses.find((l) => l.productId != null && String(l.productId) === productId);
+      if (linkedLicense?.status === "EXPIRED") {
+        blockers.push(t("importOrder.validation.permitExpired"));
+      }
+    }
+    return { blockers };
+  }, [form.items, licenses, t]);
 
   const openCreate = () => {
     setForm(emptyForm);
@@ -131,6 +144,10 @@ export function ImportOrdersPage() {
     }
     if (form.items.length === 0 || form.items.some((i) => !i.productId || !i.quantity || !i.unitPrice)) {
       toast.error(t("importOrder.toastItemsRequired"));
+      return;
+    }
+    if (validation.blockers.length > 0) {
+      toast.error(validation.blockers[0]);
       return;
     }
     try {
@@ -301,7 +318,7 @@ export function ImportOrdersPage() {
               <Button variant="secondary" size="sm" onClick={closeModal}>
                 {t("common.cancel")}
               </Button>
-              <Button variant="primary" size="sm" loading={saving} onClick={handleSubmit}>
+              <Button variant="primary" size="sm" loading={saving} onClick={handleSubmit} disabled={validation.blockers.length > 0}>
                 {t("common.save")}
               </Button>
             </>
@@ -463,6 +480,13 @@ export function ImportOrdersPage() {
                 </div>
               )}
             </div>
+
+            {validation.blockers.map((msg) => (
+              <div key={msg} className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+                <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>{msg}</span>
+              </div>
+            ))}
           </div>
         </Modal>
       )}
