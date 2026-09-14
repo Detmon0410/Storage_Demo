@@ -1,10 +1,12 @@
-import type { Prisma } from "@prisma/client";
+import type { PrismaClient, Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../middleware/errorHandler.js";
 import { assertProductsNotBlockedTx } from "../utils/licenseGate.js";
 import { isLicenseValid } from "./customerLicense.model.js";
 import { createStockTransactionTx, reverseAndDeleteByReferenceTx } from "./stockTransaction.model.js";
 import { salesOrderStockReference } from "../utils/stockReference.js";
+
+type Client = PrismaClient | Prisma.TransactionClient;
 
 const withRelations = {
   customer: true,
@@ -84,19 +86,23 @@ export const SalesOrderModel = {
       include: withRelations,
     }),
 
-  create: (data: {
-    orderNo: string;
-    customerId: number;
-    customerLicenseId: number;
-    deliveryStatus: string;
-    invoiceNo: string;
-    approver?: string;
-    items: SalesOrderItemInput[];
-  }) => {
+  create: (
+    data: {
+      orderNo: string;
+      customerId: number;
+      customerLicenseId: number;
+      deliveryStatus: string;
+      invoiceNo: string;
+      approver?: string;
+      items: SalesOrderItemInput[];
+      createdById?: number;
+    },
+    client: Client = prisma,
+  ) => {
     const rows = toItemRows(data.items);
-    return prisma.$transaction(async (tx) => {
-      await assertProductsNotBlockedTx(tx, data.items.map((i) => i.productId));
-      const licenseFields = await validateAndSnapshotLicense(tx, data.customerId, data.customerLicenseId);
+    const run = async (tx: Client) => {
+      await assertProductsNotBlockedTx(tx as Prisma.TransactionClient, data.items.map((i) => i.productId));
+      const licenseFields = await validateAndSnapshotLicense(tx as Prisma.TransactionClient, data.customerId, data.customerLicenseId);
 
       const order = await tx.salesOrder.create({
         data: {
@@ -108,12 +114,14 @@ export const SalesOrderModel = {
           ...orderTotals(rows),
           items: { create: rows },
           ...licenseFields,
+          createdById: data.createdById,
         },
         include: withRelations,
       });
-      await createStockOutTx(tx, data.orderNo, data.items);
+      await createStockOutTx(tx as Prisma.TransactionClient, data.orderNo, data.items);
       return order;
-    });
+    };
+    return "$transaction" in client ? client.$transaction((tx) => run(tx)) : run(client);
   },
 
   update: (
@@ -127,35 +135,34 @@ export const SalesOrderModel = {
       approver: string;
       items: SalesOrderItemInput[];
     }>,
+    client: Client = prisma,
   ) => {
     const { items, customerLicenseId, ...orderFields } = data;
 
-    if (!items) {
-      return prisma.$transaction(async (tx) => {
+    const run = async (tx: Client): Promise<unknown> => {
+      if (!items) {
         let licenseFields = {};
         if (customerLicenseId != null) {
           const existing = await tx.salesOrder.findUnique({ where: { salesOrderId }, select: { customerId: true } });
           if (!existing) throw new HttpError(404, "Sales order not found");
           const customerId = data.customerId ?? existing.customerId;
-          licenseFields = await validateAndSnapshotLicense(tx, customerId, customerLicenseId);
+          licenseFields = await validateAndSnapshotLicense(tx as Prisma.TransactionClient, customerId, customerLicenseId);
         }
         return tx.salesOrder.update({ where: { salesOrderId }, data: { ...orderFields, ...licenseFields }, include: withRelations });
-      });
-    }
+      }
 
-    const rows = toItemRows(items);
-    return prisma.$transaction(async (tx) => {
-      await assertProductsNotBlockedTx(tx, items.map((i) => i.productId));
+      const rows = toItemRows(items);
+      await assertProductsNotBlockedTx(tx as Prisma.TransactionClient, items.map((i) => i.productId));
       const existing = await tx.salesOrder.findUnique({ where: { salesOrderId }, select: { orderNo: true, customerId: true } });
       if (!existing) throw new HttpError(404, "Sales order not found");
 
-      await reverseAndDeleteByReferenceTx(tx, salesOrderStockReference(existing.orderNo));
+      await reverseAndDeleteByReferenceTx(tx as Prisma.TransactionClient, salesOrderStockReference(existing.orderNo));
       await tx.salesOrderItem.deleteMany({ where: { salesOrderId } });
 
       let licenseFields = {};
       if (customerLicenseId != null) {
         const customerId = data.customerId ?? existing.customerId;
-        licenseFields = await validateAndSnapshotLicense(tx, customerId, customerLicenseId);
+        licenseFields = await validateAndSnapshotLicense(tx as Prisma.TransactionClient, customerId, customerLicenseId);
       }
 
       const updated = await tx.salesOrder.update({
@@ -170,17 +177,20 @@ export const SalesOrderModel = {
       });
 
       const orderNo = data.orderNo ?? existing.orderNo;
-      await createStockOutTx(tx, orderNo, items);
+      await createStockOutTx(tx as Prisma.TransactionClient, orderNo, items);
       return updated;
-    });
+    };
+    return "$transaction" in client ? client.$transaction((tx) => run(tx)) : run(client);
   },
 
-  delete: (salesOrderId: number) =>
-    prisma.$transaction(async (tx) => {
+  delete: (salesOrderId: number, client: Client = prisma) => {
+    const run = async (tx: Client) => {
       const existing = await tx.salesOrder.findUnique({ where: { salesOrderId }, select: { orderNo: true } });
       if (!existing) throw new HttpError(404, "Sales order not found");
 
-      await reverseAndDeleteByReferenceTx(tx, salesOrderStockReference(existing.orderNo));
+      await reverseAndDeleteByReferenceTx(tx as Prisma.TransactionClient, salesOrderStockReference(existing.orderNo));
       return tx.salesOrder.delete({ where: { salesOrderId } });
-    }),
+    };
+    return "$transaction" in client ? client.$transaction((tx) => run(tx)) : run(client);
+  },
 };

@@ -1,9 +1,11 @@
-import type { Prisma } from "@prisma/client";
+import type { PrismaClient, Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../middleware/errorHandler.js";
 import { assertProductsNotBlockedTx } from "../utils/licenseGate.js";
 import { createStockTransactionTx, reverseAndDeleteByReferenceTx } from "./stockTransaction.model.js";
 import { importOrderStockReference } from "../utils/stockReference.js";
+
+type Client = PrismaClient | Prisma.TransactionClient;
 
 const withRelations = {
   supplier: true,
@@ -65,21 +67,25 @@ export const ImportOrderModel = {
       include: withRelations,
     }),
 
-  create: (data: {
-    orderNo: string;
-    supplierId: number;
-    country: string;
-    incoterms: string;
-    orderDate: Date;
-    etaDate: Date;
-    status: string;
-    approver?: string;
-    customsEntryNo?: string;
-    items: ImportOrderItemInput[];
-  }) => {
+  create: (
+    data: {
+      orderNo: string;
+      supplierId: number;
+      country: string;
+      incoterms: string;
+      orderDate: Date;
+      etaDate: Date;
+      status: string;
+      approver?: string;
+      customsEntryNo?: string;
+      items: ImportOrderItemInput[];
+      createdById?: number;
+    },
+    client: Client = prisma,
+  ) => {
     const rows = toItemRows(data.items);
-    return prisma.$transaction(async (tx) => {
-      await assertProductsNotBlockedTx(tx, data.items.map((i) => i.productId));
+    const run = async (tx: Client) => {
+      await assertProductsNotBlockedTx(tx as Prisma.TransactionClient, data.items.map((i) => i.productId));
       const order = await tx.importOrder.create({
         data: {
           orderNo: data.orderNo,
@@ -94,12 +100,14 @@ export const ImportOrderModel = {
           skuItemCount: rows.length,
           ...orderTotals(rows),
           items: { create: rows },
+          createdById: data.createdById,
         },
         include: withRelations,
       });
-      await createStockInTx(tx, data.orderNo, data.items);
+      await createStockInTx(tx as Prisma.TransactionClient, data.orderNo, data.items);
       return order;
-    });
+    };
+    return "$transaction" in client ? client.$transaction((tx) => run(tx)) : run(client);
   },
 
   update: (
@@ -116,19 +124,20 @@ export const ImportOrderModel = {
       customsEntryNo: string;
       items: ImportOrderItemInput[];
     }>,
+    client: Client = prisma,
   ) => {
     const { items, ...orderFields } = data;
     if (!items) {
-      return prisma.importOrder.update({ where: { importOrderId }, data: orderFields, include: withRelations });
+      return client.importOrder.update({ where: { importOrderId }, data: orderFields, include: withRelations });
     }
 
     const rows = toItemRows(items);
-    return prisma.$transaction(async (tx) => {
+    const run = async (tx: Client) => {
       const existing = await tx.importOrder.findUnique({ where: { importOrderId }, select: { orderNo: true } });
       if (!existing) throw new HttpError(404, "Import order not found");
 
-      await assertProductsNotBlockedTx(tx, items.map((i) => i.productId));
-      await reverseAndDeleteByReferenceTx(tx, importOrderStockReference(existing.orderNo));
+      await assertProductsNotBlockedTx(tx as Prisma.TransactionClient, items.map((i) => i.productId));
+      await reverseAndDeleteByReferenceTx(tx as Prisma.TransactionClient, importOrderStockReference(existing.orderNo));
       await tx.importOrderItem.deleteMany({ where: { importOrderId } });
 
       const updated = await tx.importOrder.update({
@@ -143,17 +152,20 @@ export const ImportOrderModel = {
       });
 
       const orderNo = data.orderNo ?? existing.orderNo;
-      await createStockInTx(tx, orderNo, items);
+      await createStockInTx(tx as Prisma.TransactionClient, orderNo, items);
       return updated;
-    });
+    };
+    return "$transaction" in client ? client.$transaction((tx) => run(tx)) : run(client);
   },
 
-  delete: (importOrderId: number) =>
-    prisma.$transaction(async (tx) => {
+  delete: (importOrderId: number, client: Client = prisma) => {
+    const run = async (tx: Client) => {
       const existing = await tx.importOrder.findUnique({ where: { importOrderId }, select: { orderNo: true } });
       if (!existing) throw new HttpError(404, "Import order not found");
 
-      await reverseAndDeleteByReferenceTx(tx, importOrderStockReference(existing.orderNo));
+      await reverseAndDeleteByReferenceTx(tx as Prisma.TransactionClient, importOrderStockReference(existing.orderNo));
       return tx.importOrder.delete({ where: { importOrderId } });
-    }),
+    };
+    return "$transaction" in client ? client.$transaction((tx) => run(tx)) : run(client);
+  },
 };
