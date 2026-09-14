@@ -1,6 +1,7 @@
 import { createResourceApi, request } from "./client";
 import type {
   Category,
+  Company,
   Customer,
   CustomerLicense,
   DashboardKpi,
@@ -12,6 +13,12 @@ import type {
   StockTransaction,
   Supplier,
 } from "./types";
+
+export const companyApi = {
+  get: () => request<Company | null>("/companies"),
+  save: (body: { legalName: string; taxId: string; address: string }) =>
+    request<Company>("/companies", { method: "PUT", body: JSON.stringify(body) }),
+};
 
 export const categoryApi = createResourceApi<Category>("/categories");
 export const supplierApi = createResourceApi<Supplier>("/suppliers");

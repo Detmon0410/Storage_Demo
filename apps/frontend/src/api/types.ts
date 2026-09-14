@@ -6,6 +6,13 @@ export interface Category {
   isActive: boolean;
 }
 
+export interface Company {
+  companyId: number;
+  legalName: string;
+  taxId: string;
+  address: string;
+}
+
 export interface Supplier {
   supplierId: number;
   supplierCode: string;
@@ -93,6 +100,10 @@ export interface License {
   expiryDate: string;
   daysRemaining: number;
   status: string;
+  companyId: number | null;
+  productId: number | null;
+  company?: Company;
+  product?: Product;
 }
 
 export interface Customer {
