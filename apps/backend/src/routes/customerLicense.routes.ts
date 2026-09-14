@@ -14,7 +14,7 @@ export const customerLicenseRoutes = Router();
 
 customerLicenseRoutes.get("/", requireAuth, requirePermission("CUSTOMER_LICENSE_VIEW"), listCustomerLicenses);
 customerLicenseRoutes.get("/:id", requireAuth, requirePermission("CUSTOMER_LICENSE_VIEW"), getCustomerLicense);
-customerLicenseRoutes.post("/", requireAuth, createCustomerLicense);
-customerLicenseRoutes.put("/:id", requireAuth, updateCustomerLicense);
-customerLicenseRoutes.delete("/:id", requireAuth, deleteCustomerLicense);
-customerLicenseRoutes.post("/:id/renew", requireAuth, renewCustomerLicense);
+customerLicenseRoutes.post("/", requireAuth, requirePermission("CUSTOMER_LICENSE_CREATE"), createCustomerLicense);
+customerLicenseRoutes.put("/:id", requireAuth, requirePermission("CUSTOMER_LICENSE_EDIT"), updateCustomerLicense);
+customerLicenseRoutes.delete("/:id", requireAuth, requirePermission("CUSTOMER_LICENSE_DELETE"), deleteCustomerLicense);
+customerLicenseRoutes.post("/:id/renew", requireAuth, requirePermission("CUSTOMER_LICENSE_EDIT"), renewCustomerLicense);
