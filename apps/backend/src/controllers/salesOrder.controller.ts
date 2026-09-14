@@ -122,3 +122,55 @@ export const deleteSalesOrder = asyncHandler(async (req: AuthenticatedRequest, r
   });
   res.status(204).end();
 });
+
+export const approveSalesOrder = asyncHandler(async (req: AuthenticatedRequest, res) => {
+  const salesOrderId = Number(req.params.id);
+  const order = await prisma.$transaction(async (tx) => {
+    const existing = await tx.salesOrder.findUnique({ where: { salesOrderId } });
+    if (!existing) throw new HttpError(404, "Sales order not found");
+    if (existing.createdById != null && existing.createdById === req.userId) {
+      throw new HttpError(403, "You cannot approve an order you created");
+    }
+    const approverUser = await tx.user.findUnique({ where: { id: req.userId! }, select: { username: true } });
+    const updated = await tx.salesOrder.update({
+      where: { salesOrderId },
+      data: { deliveryStatus: "APPROVED", approver: approverUser?.username ?? null },
+    });
+    await AuditLogModel.record(tx, {
+      entity: "SalesOrder",
+      entityId: salesOrderId,
+      action: "approve",
+      userId: req.userId ?? null,
+      before: existing,
+      after: updated,
+    });
+    return updated;
+  });
+  res.json(order);
+});
+
+export const rejectSalesOrder = asyncHandler(async (req: AuthenticatedRequest, res) => {
+  const salesOrderId = Number(req.params.id);
+  const order = await prisma.$transaction(async (tx) => {
+    const existing = await tx.salesOrder.findUnique({ where: { salesOrderId } });
+    if (!existing) throw new HttpError(404, "Sales order not found");
+    if (existing.createdById != null && existing.createdById === req.userId) {
+      throw new HttpError(403, "You cannot reject an order you created");
+    }
+    const approverUser = await tx.user.findUnique({ where: { id: req.userId! }, select: { username: true } });
+    const updated = await tx.salesOrder.update({
+      where: { salesOrderId },
+      data: { deliveryStatus: "REJECTED", approver: approverUser?.username ?? null },
+    });
+    await AuditLogModel.record(tx, {
+      entity: "SalesOrder",
+      entityId: salesOrderId,
+      action: "reject",
+      userId: req.userId ?? null,
+      before: existing,
+      after: { ...updated, rejectionReason: req.body?.reason ?? null },
+    });
+    return updated;
+  });
+  res.json(order);
+});

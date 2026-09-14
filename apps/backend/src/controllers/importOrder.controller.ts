@@ -128,3 +128,55 @@ export const deleteImportOrder = asyncHandler(async (req: AuthenticatedRequest, 
   });
   res.status(204).end();
 });
+
+export const approveImportOrder = asyncHandler(async (req: AuthenticatedRequest, res) => {
+  const importOrderId = Number(req.params.id);
+  const order = await prisma.$transaction(async (tx) => {
+    const existing = await tx.importOrder.findUnique({ where: { importOrderId } });
+    if (!existing) throw new HttpError(404, "Import order not found");
+    if (existing.createdById != null && existing.createdById === req.userId) {
+      throw new HttpError(403, "You cannot approve an order you created");
+    }
+    const approverUser = await tx.user.findUnique({ where: { id: req.userId! }, select: { username: true } });
+    const updated = await tx.importOrder.update({
+      where: { importOrderId },
+      data: { status: "APPROVED", approver: approverUser?.username ?? null },
+    });
+    await AuditLogModel.record(tx, {
+      entity: "ImportOrder",
+      entityId: importOrderId,
+      action: "approve",
+      userId: req.userId ?? null,
+      before: existing,
+      after: updated,
+    });
+    return updated;
+  });
+  res.json(order);
+});
+
+export const rejectImportOrder = asyncHandler(async (req: AuthenticatedRequest, res) => {
+  const importOrderId = Number(req.params.id);
+  const order = await prisma.$transaction(async (tx) => {
+    const existing = await tx.importOrder.findUnique({ where: { importOrderId } });
+    if (!existing) throw new HttpError(404, "Import order not found");
+    if (existing.createdById != null && existing.createdById === req.userId) {
+      throw new HttpError(403, "You cannot reject an order you created");
+    }
+    const approverUser = await tx.user.findUnique({ where: { id: req.userId! }, select: { username: true } });
+    const updated = await tx.importOrder.update({
+      where: { importOrderId },
+      data: { status: "REJECTED", approver: approverUser?.username ?? null },
+    });
+    await AuditLogModel.record(tx, {
+      entity: "ImportOrder",
+      entityId: importOrderId,
+      action: "reject",
+      userId: req.userId ?? null,
+      before: existing,
+      after: { ...updated, rejectionReason: req.body?.reason ?? null },
+    });
+    return updated;
+  });
+  res.json(order);
+});
