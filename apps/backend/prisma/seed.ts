@@ -545,6 +545,7 @@ async function main() {
     prisma.importOrder.deleteMany(),
     prisma.customer.deleteMany(),
     prisma.license.deleteMany(),
+    prisma.company.deleteMany(),
     prisma.product.deleteMany(),
     prisma.supplier.deleteMany(),
     prisma.category.deleteMany(),
@@ -627,6 +628,15 @@ async function main() {
       importOrderItemIdByKey.set(`${order.orderNo}::${order.items[index].productCode}`, item.importOrderItemId);
     });
   }
+
+  const company = await prisma.company.create({
+    data: {
+      companyId: 1,
+      legalName: "Tokyo Liquor Import Co., Ltd.",
+      taxId: "T1234567890123",
+      address: "1-2-3 Nihonbashi, Chuo-ku, Tokyo 103-0027, Japan",
+    },
+  });
 
   for (const [licenseNo, licenseType, holderName, category, issueDate, expiryDate, daysRemaining, status] of licenses) {
     await prisma.license.create({
