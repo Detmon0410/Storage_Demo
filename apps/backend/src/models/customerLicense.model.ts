@@ -1,8 +1,11 @@
 import { CustomerLicenseStatus } from "@prisma/client";
+import type { PrismaClient, Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../middleware/errorHandler.js";
 
 const withRelations = { customer: true } as const;
+
+type Client = PrismaClient | Prisma.TransactionClient;
 
 export const isLicenseValid = (license: { status: CustomerLicenseStatus; expiryDate: Date }) => {
   const today = new Date();
@@ -79,8 +82,12 @@ export const CustomerLicenseModel = {
 
   delete: (customerLicenseId: number) => prisma.customerLicense.delete({ where: { customerLicenseId } }),
 
-  renew: (customerLicenseId: number, data: { licenseNumber: string; issueDate: Date; expiryDate: Date; documentUrl?: string | null; notes?: string | null; actor?: string }) =>
-    prisma.$transaction(async (tx) => {
+  renew: (
+    customerLicenseId: number,
+    data: { licenseNumber: string; issueDate: Date; expiryDate: Date; documentUrl?: string | null; notes?: string | null; actor?: string },
+    client: Client = prisma,
+  ) => {
+    const run = async (tx: Client) => {
       const old = await tx.customerLicense.findUnique({ where: { customerLicenseId } });
       if (!old) throw new HttpError(404, "Customer license not found");
       if (old.status !== CustomerLicenseStatus.ACTIVE && old.status !== CustomerLicenseStatus.EXPIRED) {
@@ -116,5 +123,7 @@ export const CustomerLicenseModel = {
         },
         include: withRelations,
       });
-    }),
+    };
+    return "$transaction" in client ? client.$transaction((tx) => run(tx)) : run(client);
+  },
 };

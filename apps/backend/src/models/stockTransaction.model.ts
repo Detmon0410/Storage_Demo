@@ -1,6 +1,9 @@
 import { Prisma, TransactionType } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../middleware/errorHandler.js";
+
+type Client = PrismaClient | Prisma.TransactionClient;
 
 export const stockDelta = (type: TransactionType, quantity: number) => (type === "OUT" ? -quantity : quantity);
 
@@ -61,15 +64,20 @@ export const StockTransactionModel = {
       include: { product: true },
     }),
 
-  create: (data: StockTransactionInput) => prisma.$transaction((tx) => createStockTransactionTx(tx, data)),
+  create: (data: StockTransactionInput, client: Client = prisma) =>
+    "$transaction" in client
+      ? client.$transaction((tx) => createStockTransactionTx(tx, data))
+      : createStockTransactionTx(client as Prisma.TransactionClient, data),
 
-  delete: (transactionId: number) =>
-    prisma.$transaction(async (tx) => {
+  delete: (transactionId: number, client: Client = prisma) => {
+    const run = async (tx: Client) => {
       const transaction = await tx.stockTransaction.delete({ where: { transactionId } });
       await tx.product.update({
         where: { productId: transaction.productId },
         data: { stockQty: { increment: -stockDelta(transaction.transactionType, transaction.quantity) } },
       });
       return transaction;
-    }),
+    };
+    return "$transaction" in client ? client.$transaction((tx) => run(tx)) : run(client);
+  },
 };
