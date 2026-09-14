@@ -514,6 +514,116 @@ const dashboardKpis = [
   ["TOTAL_OUTSTANDING_CREDIT", 16170000, "JPY", "+2.1"],
 ] as const;
 
+// The 6 basic roles from liquor-system-basic-role-permission-recommendation.md §2/§9.
+const roles = [
+  { roleCode: "SYSTEM_ADMIN", roleName: "System Admin" },
+  { roleCode: "MANAGER_APPROVER", roleName: "Manager / Approver" },
+  { roleCode: "IMPORT_COMPLIANCE_OFFICER", roleName: "Import & Compliance Officer" },
+  { roleCode: "WAREHOUSE_DISTRIBUTION_OFFICER", roleName: "Warehouse & Distribution Officer" },
+  { roleCode: "SALES_OFFICER", roleName: "Sales Officer" },
+  { roleCode: "FINANCE_ACCOUNTING_OFFICER", roleName: "Finance / Accounting Officer" },
+] as const;
+
+const ALL_ROLES = roles.map((r) => r.roleCode);
+const SYSTEM_ADMIN = ["SYSTEM_ADMIN"];
+
+// ~45 permission codes mapped to the roles that hold them, transcribed directly from the
+// role doc §7 matrix (plus DASHBOARD_MANAGE, documented as admin-only, mutating-dashboard-
+// KPI-only — no invented access beyond the matrix).
+const permissions: { code: string; name: string; roles: string[] }[] = [
+  { code: "DASHBOARD_VIEW", name: "View Dashboard", roles: ALL_ROLES },
+  { code: "DASHBOARD_MANAGE", name: "Manage Dashboard KPIs", roles: SYSTEM_ADMIN },
+  { code: "USER_MANAGEMENT_FULL", name: "Manage Users and Roles", roles: SYSTEM_ADMIN },
+  { code: "PRODUCT_VIEW", name: "View Products", roles: ALL_ROLES },
+  { code: "PRODUCT_CREATE", name: "Create Products", roles: SYSTEM_ADMIN },
+  { code: "PRODUCT_EDIT", name: "Edit Products", roles: SYSTEM_ADMIN },
+  { code: "PRODUCT_DELETE", name: "Delete Products", roles: SYSTEM_ADMIN },
+  { code: "CATEGORY_VIEW", name: "View Categories", roles: ALL_ROLES },
+  { code: "CATEGORY_CREATE", name: "Create Categories", roles: SYSTEM_ADMIN },
+  { code: "CATEGORY_EDIT", name: "Edit Categories", roles: SYSTEM_ADMIN },
+  { code: "CATEGORY_DELETE", name: "Delete Categories", roles: SYSTEM_ADMIN },
+  {
+    code: "SUPPLIER_VIEW",
+    name: "View Suppliers",
+    roles: ["SYSTEM_ADMIN", "MANAGER_APPROVER", "IMPORT_COMPLIANCE_OFFICER", "WAREHOUSE_DISTRIBUTION_OFFICER", "FINANCE_ACCOUNTING_OFFICER"],
+  },
+  { code: "SUPPLIER_CREATE", name: "Create Suppliers", roles: ["SYSTEM_ADMIN", "IMPORT_COMPLIANCE_OFFICER"] },
+  { code: "SUPPLIER_EDIT", name: "Edit Suppliers", roles: ["SYSTEM_ADMIN", "IMPORT_COMPLIANCE_OFFICER"] },
+  { code: "SUPPLIER_DELETE", name: "Delete Suppliers", roles: SYSTEM_ADMIN },
+  { code: "CUSTOMER_VIEW", name: "View Customers", roles: ALL_ROLES },
+  { code: "CUSTOMER_CREATE", name: "Create Customers", roles: ["SYSTEM_ADMIN", "SALES_OFFICER"] },
+  { code: "CUSTOMER_EDIT", name: "Edit Customers", roles: ["SYSTEM_ADMIN", "SALES_OFFICER"] },
+  { code: "CUSTOMER_DELETE", name: "Delete Customers", roles: SYSTEM_ADMIN },
+  { code: "CUSTOMER_LICENSE_VIEW", name: "View Customer Licenses", roles: ALL_ROLES },
+  { code: "CUSTOMER_LICENSE_CREATE", name: "Create Customer Licenses", roles: ["SYSTEM_ADMIN", "IMPORT_COMPLIANCE_OFFICER"] },
+  { code: "CUSTOMER_LICENSE_EDIT", name: "Edit Customer Licenses", roles: ["SYSTEM_ADMIN", "IMPORT_COMPLIANCE_OFFICER"] },
+  { code: "CUSTOMER_LICENSE_DELETE", name: "Delete Customer Licenses", roles: SYSTEM_ADMIN },
+  { code: "LICENSE_VIEW", name: "View Licenses", roles: ALL_ROLES },
+  { code: "LICENSE_CREATE", name: "Create Licenses", roles: ["SYSTEM_ADMIN", "IMPORT_COMPLIANCE_OFFICER"] },
+  { code: "LICENSE_EDIT", name: "Edit Licenses", roles: ["SYSTEM_ADMIN", "IMPORT_COMPLIANCE_OFFICER"] },
+  { code: "LICENSE_DELETE", name: "Delete Licenses", roles: SYSTEM_ADMIN },
+  {
+    code: "IMPORT_ORDER_VIEW",
+    name: "View Import Orders",
+    roles: ["SYSTEM_ADMIN", "MANAGER_APPROVER", "IMPORT_COMPLIANCE_OFFICER", "WAREHOUSE_DISTRIBUTION_OFFICER", "FINANCE_ACCOUNTING_OFFICER"],
+  },
+  { code: "IMPORT_ORDER_CREATE", name: "Create Import Orders", roles: ["SYSTEM_ADMIN", "IMPORT_COMPLIANCE_OFFICER"] },
+  { code: "IMPORT_ORDER_EDIT", name: "Edit Import Orders", roles: ["SYSTEM_ADMIN", "IMPORT_COMPLIANCE_OFFICER"] },
+  { code: "IMPORT_ORDER_DELETE", name: "Delete Import Orders", roles: SYSTEM_ADMIN },
+  { code: "IMPORT_ORDER_APPROVE", name: "Approve Import Orders", roles: ["SYSTEM_ADMIN", "MANAGER_APPROVER"] },
+  { code: "SALES_ORDER_VIEW", name: "View Sales Orders", roles: ALL_ROLES },
+  { code: "SALES_ORDER_CREATE", name: "Create Sales Orders", roles: ["SYSTEM_ADMIN", "SALES_OFFICER"] },
+  { code: "SALES_ORDER_EDIT", name: "Edit Sales Orders", roles: ["SYSTEM_ADMIN", "SALES_OFFICER"] },
+  { code: "SALES_ORDER_DELETE", name: "Delete Sales Orders", roles: SYSTEM_ADMIN },
+  { code: "SALES_ORDER_APPROVE", name: "Approve Sales Orders", roles: ["SYSTEM_ADMIN", "MANAGER_APPROVER"] },
+  { code: "INVENTORY_VIEW", name: "View Inventory", roles: ALL_ROLES },
+  { code: "INVENTORY_CREATE", name: "Create Inventory", roles: ["SYSTEM_ADMIN", "WAREHOUSE_DISTRIBUTION_OFFICER"] },
+  { code: "INVENTORY_EDIT", name: "Edit Inventory", roles: ["SYSTEM_ADMIN", "WAREHOUSE_DISTRIBUTION_OFFICER"] },
+  { code: "INVENTORY_DELETE", name: "Delete Inventory", roles: SYSTEM_ADMIN },
+  { code: "STOCK_TRANSACTION_VIEW", name: "View Stock Transactions", roles: ALL_ROLES },
+  { code: "STOCK_TRANSACTION_CREATE", name: "Create Stock Transactions", roles: ["SYSTEM_ADMIN", "WAREHOUSE_DISTRIBUTION_OFFICER"] },
+  { code: "STOCK_TRANSACTION_DELETE", name: "Delete Stock Transactions", roles: SYSTEM_ADMIN },
+  { code: "AUDIT_LOG_VIEW", name: "View Audit Logs", roles: ["SYSTEM_ADMIN", "MANAGER_APPROVER"] },
+];
+
+async function seedRbac(adminUsername: string) {
+  const roleIdByCode = new Map<string, number>();
+  for (const role of roles) {
+    const record = await prisma.role.upsert({
+      where: { roleCode: role.roleCode },
+      update: { roleName: role.roleName },
+      create: role,
+    });
+    roleIdByCode.set(role.roleCode, record.roleId);
+  }
+
+  const permissionIdByCode = new Map<string, number>();
+  for (const perm of permissions) {
+    const record = await prisma.permission.upsert({
+      where: { permissionCode: perm.code },
+      update: { permissionName: perm.name },
+      create: { permissionCode: perm.code, permissionName: perm.name },
+    });
+    permissionIdByCode.set(perm.code, record.permissionId);
+    for (const roleCode of perm.roles) {
+      await prisma.rolePermission.upsert({
+        where: { roleId_permissionId: { roleId: roleIdByCode.get(roleCode)!, permissionId: record.permissionId } },
+        update: {},
+        create: { roleId: roleIdByCode.get(roleCode)!, permissionId: record.permissionId },
+      });
+    }
+  }
+
+  const adminUser = await prisma.user.findUnique({ where: { username: adminUsername } });
+  if (adminUser) {
+    await prisma.userRole.upsert({
+      where: { userId_roleId: { userId: adminUser.id, roleId: roleIdByCode.get("SYSTEM_ADMIN")! } },
+      update: {},
+      create: { userId: adminUser.id, roleId: roleIdByCode.get("SYSTEM_ADMIN")! },
+    });
+  }
+}
+
 async function main() {
   const adminUsername = "admin";
   const adminPassword = process.env.ADMIN_DEFAULT_PASSWORD ?? "changeme123";
@@ -531,6 +641,11 @@ async function main() {
   } else {
     console.log(`System Admin user "${adminUsername}" already exists, skipping`);
   }
+
+  // RBAC seed: 6 roles, ~45 permissions, role_permission matrix, and the admin -> SYSTEM_ADMIN
+  // assignment. Idempotent (upsert-keyed) and independent of the bulk-delete/reseed block below,
+  // which only touches unrelated business-demo data.
+  await seedRbac(adminUsername);
 
   await prisma.$transaction([
     prisma.stockTransaction.deleteMany(),
