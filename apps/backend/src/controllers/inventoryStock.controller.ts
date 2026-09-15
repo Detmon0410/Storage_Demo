@@ -1,6 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 import { AuditLogModel } from "../lib/audit.js";
-import { InventoryStockModel } from "../models/inventoryStock.model.js";
+import { InventoryStockModel, adjustStockTx } from "../models/inventoryStock.model.js";
 import { HttpError } from "../middleware/errorHandler.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import type { AuthenticatedRequest } from "../middleware/auth.js";
@@ -52,8 +52,7 @@ export const createInventoryStock = asyncHandler(async (req: AuthenticatedReques
 });
 
 export const updateInventoryStock = asyncHandler(async (req: AuthenticatedRequest, res) => {
-  const { productId, importOrderItemId, lotBatch, receivedDate, quantityOnHand, stockAgeDays, stockStatus, warehouse } =
-    req.body;
+  const { productId, importOrderItemId, lotBatch, receivedDate, stockAgeDays, stockStatus, warehouse } = req.body;
   const stock = await prisma.$transaction(async (tx) => {
     const before = await tx.inventoryStock.findUnique({ where: { inventoryStockId: Number(req.params.id) } });
     if (!before) throw new HttpError(404, "Inventory stock not found");
@@ -64,7 +63,6 @@ export const updateInventoryStock = asyncHandler(async (req: AuthenticatedReques
         importOrderItemId: importOrderItemId === undefined ? undefined : optionalNullableNumber(importOrderItemId),
         lotBatch,
         receivedDate: optionalDate(receivedDate),
-        quantityOnHand: optionalNumber(quantityOnHand),
         stockAgeDays: optionalNumber(stockAgeDays),
         stockStatus,
         warehouse,
@@ -81,6 +79,33 @@ export const updateInventoryStock = asyncHandler(async (req: AuthenticatedReques
     return after;
   });
   res.json(stock);
+});
+
+export const adjustInventoryStock = asyncHandler(async (req: AuthenticatedRequest, res) => {
+  const { delta, reasonCode, note } = req.body;
+  if (delta == null || Number(delta) === 0) throw new HttpError(400, "delta is required and must be non-zero");
+  const validReasons = ["DAMAGE", "THEFT", "RECOUNT", "EXPIRY", "CORRECTION", "OTHER"];
+  if (!reasonCode || !validReasons.includes(reasonCode)) {
+    throw new HttpError(400, `reasonCode must be one of: ${validReasons.join(", ")}`);
+  }
+  const result = await prisma.$transaction(async (tx) => {
+    const { before, after } = await adjustStockTx(tx, {
+      inventoryStockId: Number(req.params.id),
+      delta: Number(delta),
+      reasonCode,
+      note,
+    });
+    await AuditLogModel.record(tx, {
+      entity: "InventoryStock",
+      entityId: after.inventoryStockId,
+      action: "adjust",
+      userId: req.userId ?? null,
+      before: { ...before, reasonCode, note: note ?? null },
+      after,
+    });
+    return after;
+  });
+  res.json(result);
 });
 
 export const deleteInventoryStock = asyncHandler(async (req: AuthenticatedRequest, res) => {
