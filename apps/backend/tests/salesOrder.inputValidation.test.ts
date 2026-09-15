@@ -192,6 +192,42 @@ describe("Sales order line-item and deliveryStatus validation (ENFORCE-05)", () 
     expect(res.body.error.toLowerCase()).toContain("invalid deliverystatus");
   });
 
+  it("rejects deliveryStatus APPROVED on create, even for a caller without approve permission", async () => {
+    const inventoryStockId = await makeLot("BYPASS");
+    const orderNo = `TEST_INVAL_BYPASS_${Date.now()}`;
+    const res = await request(app)
+      .post("/api/sales-orders")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        orderNo,
+        customerId,
+        customerLicenseId,
+        deliveryStatus: "APPROVED",
+        invoiceNo: `INV-${orderNo}`,
+        items: [{ productId, quantity: 1, unitPrice: 10, discount: 0, inventoryStockId }],
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.error.toLowerCase()).toContain("dedicated approve/reject endpoint");
+  });
+
+  it("rejects deliveryStatus REJECTED on create", async () => {
+    const inventoryStockId = await makeLot("BYPASSREJ");
+    const orderNo = `TEST_INVAL_BYPASSREJ_${Date.now()}`;
+    const res = await request(app)
+      .post("/api/sales-orders")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        orderNo,
+        customerId,
+        customerLicenseId,
+        deliveryStatus: "REJECTED",
+        invoiceNo: `INV-${orderNo}`,
+        items: [{ productId, quantity: 1, unitPrice: 10, discount: 0, inventoryStockId }],
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.error.toLowerCase()).toContain("dedicated approve/reject endpoint");
+  });
+
   it("rejects a backward deliveryStatus transition (DELIVERED -> PENDING)", async () => {
     const inventoryStockId = await makeLot("BACKWARD");
     const orderNo = `TEST_INVAL_BACKWARD_${Date.now()}`;

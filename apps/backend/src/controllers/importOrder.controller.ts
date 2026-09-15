@@ -71,6 +71,9 @@ export const createImportOrder = asyncHandler(async (req: AuthenticatedRequest, 
   if (!orderNo || !supplierId || !country || !incoterms || !orderDate || !etaDate || !status) {
     throw new HttpError(400, "orderNo, supplierId, country, incoterms, orderDate, etaDate, and status are required");
   }
+  if (status === "APPROVED" || status === "REJECTED") {
+    throw new HttpError(400, "Use the dedicated approve/reject endpoint to change status to APPROVED or REJECTED");
+  }
   assertValidImportStatusTransition(status);
   const order = await prisma.$transaction(async (tx) => {
     const created = await ImportOrderModel.create(

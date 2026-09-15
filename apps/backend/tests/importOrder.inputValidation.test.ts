@@ -98,6 +98,28 @@ describe("Import order input + status-transition validation (ENFORCE-05)", () =>
     expect(res.body.error.toLowerCase()).toContain("invalid status");
   });
 
+  it("rejects status APPROVED on create, even for a caller without approve permission", async () => {
+    const orderNo = `TEST_IOIV_BYPASS_${Date.now()}`;
+    const res = await request(app)
+      .post("/api/import-orders")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send(baseOrder(orderNo, { status: "APPROVED" }));
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.toLowerCase()).toContain("dedicated approve/reject endpoint");
+  });
+
+  it("rejects status REJECTED on create", async () => {
+    const orderNo = `TEST_IOIV_BYPASSREJ_${Date.now()}`;
+    const res = await request(app)
+      .post("/api/import-orders")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send(baseOrder(orderNo, { status: "REJECTED" }));
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.toLowerCase()).toContain("dedicated approve/reject endpoint");
+  });
+
   it("rejects a backward status transition with an error containing 'invalid status transition'", async () => {
     const orderNo = `TEST_IOIV_BACKWARD_${Date.now()}`;
     const createRes = await request(app)

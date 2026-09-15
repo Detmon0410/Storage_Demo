@@ -74,6 +74,9 @@ export const createSalesOrder = asyncHandler(async (req: AuthenticatedRequest, r
   if (!customerLicenseId) {
     throw new HttpError(400, "A valid customer license must be selected");
   }
+  if (deliveryStatus === "APPROVED" || deliveryStatus === "REJECTED") {
+    throw new HttpError(400, "Use the dedicated approve/reject endpoint to change status to APPROVED or REJECTED");
+  }
   assertValidDeliveryStatusTransition(deliveryStatus);
   const order = await prisma.$transaction(async (tx) => {
     const created = await SalesOrderModel.create(
