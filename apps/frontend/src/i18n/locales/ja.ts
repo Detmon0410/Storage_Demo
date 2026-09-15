@@ -113,19 +113,36 @@ export const ja: TranslationSchema = {
     title: "ダッシュボード概要",
     subtitle: "酒類輸入・卸販売事業の状況を1画面でリアルタイムに把握 (BR-01)",
     loading: "ダッシュボードデータを読み込み中...",
-    alertsHeading: "対応が必要なアラート",
+    banner: {
+      licenses: "{{count}}件の許可証が期限切れ、または30日以内に期限切れ — 今すぐ確認",
+      imports: "{{count}}件の輸入発注に問題あり — 今すぐ確認",
+      credit: "{{count}}件の得意先が与信限度を超過 — 今すぐ確認",
+      stock: "{{count}}件の商品が在庫僅少・欠品 — 再発注を計画",
+    },
+    dept: {
+      warehouse: "在庫構成",
+      compliance: "許可証の期限管理",
+    },
+    inventory: {
+      totalProducts: "商品総数",
+      byCountry: "原産国別の在庫金額",
+      otherCountries: "その他",
+    },
     alert: {
-      licensesTitle: "期限切れ間近・期限切れの許可証",
-      licensesDesc: "30日以内、または既に期限切れ",
+      licensesTitle: "対応が必要な許可証",
       creditTitle: "与信リスクのある得意先",
-      creditDesc: "与信限度超過、または許可証未登録",
       stockTitle: "在庫僅少・欠品の商品",
-      stockDesc: "再発注または在庫処分の計画が必要",
-      importsTitle: "問題のある輸入発注",
-      importsDesc: "受付確認段階で異常を検知",
+    },
+    list: {
+      empty: "対応が必要な項目はありません。",
+      daysLeft: "残り{{count}}日",
+      daysOverdue: "{{count}}日超過",
+    },
+    tabs: {
+      sales: "販売",
+      imports: "輸入",
     },
     permit: {
-      heading: "許可証の期限管理",
       bucket: {
         PREPARATION: "更新準備 (120日)",
         NOTIFY: "通知 (90日)",
@@ -134,8 +151,6 @@ export const ja: TranslationSchema = {
         EXPIRED: "期限切れ",
       },
     },
-    recentImports: "最近の輸入発注",
-    recentSales: "最近の販売注文",
     viewAll: "すべて表示",
     noImports: "輸入発注はまだありません",
     noSales: "販売注文はまだありません",

@@ -111,3 +111,57 @@ Every step above is gated, going forward, by Phase 2's RBAC (who may act) and lo
 - **Import document checklist audience**: internal staff only. "Documents for customs brokers" is a generated output, not broker portal access — no external accounts in scope.
 
 Phase 7 is now registered in `.planning/REQUIREMENTS.md` (COMPANY-01, PERMIT-01..04) and `.planning/ROADMAP.md` (goal/depends/success criteria). Next: run `/gsd-plan-phase 7` for the task-level PLAN.md breakdown.
+
+## 6. Addendum (2026-09-15): Status Correction + License/Permit Model Gap
+
+### 6.1 Status table correction
+
+This doc's Phase 7 row above still says "Not started" — stale. Per `.planning/pending-tasks-summary.md` (2026-09-14) and schema verification, actual status:
+
+| # | Phase | Actual Status |
+|---|-------|----------------|
+| 1 | Authentication | Done |
+| 2 | RBAC & Audit Logging | Done |
+| 7 | Company/Branch & Permit Deadlines | Done (scoped: single `Company` only, no `Branch`/`Warehouse` — per §5 resolution) |
+| 3, 4, 5, 6, 8 | — | Not started |
+
+`.planning/STATE.md` is also stale (says Phase 2/3 unplanned) — separate fix, not part of this doc.
+
+### 6.2 License/permit model doesn't cover PDF §6 comprehensively
+
+Phase 7 closed the Company-linking and day-count notification-tier gap, but PDF §6 (Permit/License Management) describes more than a tiered countdown. Re-reading §6 against the current schema surfaces a real gap, distinct from what Phase 7 closed:
+
+**PDF §6 wants, per permit:**
+- Basic Info: type, number, **governing authority**, holder, target company/branch/product
+- Deadlines: issue date, expiry date, renewal deadline
+- **Status**: Active, Preparation for renewal, Renewing, Expired, Suspended
+- Attachments: PDF, images, application forms, related vouchers
+- Management: responsible person, physical storage location, remarks, approval history
+- Deadline notification: 120/90/60/30-day tiers → this part **is** built (`permitStatus.ts`)
+
+**Current `License` model (`apps/backend/prisma/schema.prisma:137`) has:**
+- `licenseNo`, `licenseType`, `holderName`, `category`, `issueDate`, `expiryDate`, `companyId`, `productId`
+
+**Gaps:**
+1. No `status` field at all. `computePermitStatus()` only derives a day-count *notification* bucket (NORMAL/PREPARATION/NOTIFY/WARNING/IMPORTANT_WARNING/EXPIRED) — it cannot represent "Renewing" or "Suspended," which are facts a person sets, not something derivable from days-remaining. Flagged already in `pending-tasks-summary.md`'s open-questions list and never resolved.
+2. No `governingAuthority` field.
+3. No attachments (file storage) — related to but distinct from Phase 8's shipment-document checklist; License attachments (the permit PDF itself, application forms, vouchers) aren't in that phase's scope either.
+4. No management fields: responsible person, physical storage location, remarks, approval history.
+5. **Asymmetric with `CustomerLicense`**, which already has `documentUrl`, `notes`, `createdBy`/`updatedBy`/timestamps, `status` enum (ACTIVE/EXPIRED/REVOKED/SUSPENDED/PENDING), and a renewal chain (`renewedFromId`/`renewedTo`). The import/company-side `License` model has none of this — two permit concepts in one spec, unevenly built.
+
+### 6.3 Closure — Decided 2026-09-15: Option A
+
+Extend `License` to match `CustomerLicense`'s shape. Two models stay separate (import/company-side vs customer-side) — not unified into one `Permit` model. Rationale: smaller migration, doesn't touch existing callers of either model's identity (order-blocking gate keys off `License`, sales-order snapshot keys off `CustomerLicense`), still closes the field/status gap.
+
+**Concrete field additions to `License`** (mirroring `CustomerLicense` at `schema.prisma:162`):
+- `status` — new enum, `LicenseStatus`: ACTIVE, PREPARING_RENEWAL, RENEWING, EXPIRED, SUSPENDED (named distinctly from `CustomerLicenseStatus` since the value sets differ — License has no REVOKED/PENDING, CustomerLicense has no PREPARING_RENEWAL/RENEWING)
+- `governingAuthority` (new — not on either model today)
+- `documentUrl`, `notes`
+- `createdBy`, `createdAt`, `updatedBy`, `updatedAt`, `statusChangedBy`, `statusChangedAt`
+- `renewedFromId`/`renewedTo` renewal chain (same self-relation pattern as `CustomerLicense`)
+
+**Resolved 2026-09-15:**
+- Role: **Compliance Staff** can transition `License.status` to RENEWING/SUSPENDED (and PREPARING_RENEWAL/ACTIVE) — matches PDF §11's role table (permits/deadlines/application-related info).
+- Gate behavior: `licenseGate.ts` blocks orders when status is SUSPENDED, same as EXPIRED — checked alongside (not instead of) the existing expiry-date check. RENEWING/PREPARING_RENEWAL/ACTIVE don't block.
+
+Next: register as new Phase 9 in `.planning/ROADMAP.md` + `.planning/REQUIREMENTS.md`, then `/gsd-plan-phase 9`.

@@ -104,6 +104,15 @@
 - [ ] **QUOTE-02**: A Quotation can be converted into a SalesOrder without re-entering line items
 - [ ] **QUOTE-03**: SalesOrder supports a picking/allocation step between APPROVED and shipped, recording who picked the order and when
 
+### License/Permit Model Parity (LICENSE)
+
+- [ ] **LICENSE-01**: `License` supports a `status` field (ACTIVE, PREPARING_RENEWAL, RENEWING, EXPIRED, SUSPENDED) distinct from the computed day-count notification bucket
+- [ ] **LICENSE-02**: `License` stores `governingAuthority`
+- [ ] **LICENSE-03**: `License` supports `documentUrl`, `notes`, and audit fields (createdBy/createdAt/updatedBy/updatedAt/statusChangedBy/statusChangedAt), mirroring `CustomerLicense`
+- [ ] **LICENSE-04**: `License` supports a renewal chain (`renewedFromId`/`renewedTo`), mirroring `CustomerLicense`
+- [ ] **LICENSE-05**: A user with Compliance Staff permission can transition `License.status`; a user without it cannot
+- [ ] **LICENSE-06**: `licenseGate.ts` blocks new import/sales orders when the linked `License.status` is SUSPENDED, in addition to the existing expiry-date check
+
 ### Billing, Payment & Receivables (BILLING)
 
 - [ ] **BILLING-01**: System stores `Invoice` records (invoice date, due date, linked sales order) replacing the bare `invoiceNo` string
@@ -201,16 +210,22 @@ Deferred to a future milestone once v1 data models are live and validated.
 | BILLING-03 | Phase 8 | Pending |
 | BILLING-04 | Phase 8 | Pending |
 | BILLING-05 | Phase 8 | Pending |
+| LICENSE-01 | Phase 9 | Pending |
+| LICENSE-02 | Phase 9 | Pending |
+| LICENSE-03 | Phase 9 | Pending |
+| LICENSE-04 | Phase 9 | Pending |
+| LICENSE-05 | Phase 9 | Pending |
+| LICENSE-06 | Phase 9 | Pending |
 
 **Coverage:**
-- v1 requirements: 61 total (49 original + 12 added for Phase 8, from `spec-gap-closure-plan.md`)
-- Mapped to phases: 61
+- v1 requirements: 67 total (49 original + 12 added for Phase 8 + 6 added for Phase 9, from `spec-gap-closure-plan.md`)
+- Mapped to phases: 67
 - Unmapped: 0 ✓
 - Done: 12 (AUTH: 7, COMPANY/PERMIT: 5) — Phases 1 and 7
-- Pending: 49 — Phases 2, 3, 4, 5, 6, 8 not yet executed (Phase 2 is planned; Phases 3-6, 8 not yet planned)
+- Pending: 55 — Phases 2, 3, 4, 5, 6, 8, 9 not yet executed (Phase 2 is planned; Phases 3-6, 8, 9 not yet planned)
 
-**Note:** Phases 7-8 were added after this table's original phase numbering, via `spec-gap-closure-plan.md` (2026-09-11), to close gaps found against `thailand_alcohol_import_sales_system_overview.pdf`. Phase 7's requirements (COMPANY-01, PERMIT-01..04) were registered and are now done. Phase 8's requirements (SHIPMENT, QUOTE, BILLING groups above) are newly registered as of 2026-09-14 — not yet planned or executed.
+**Note:** Phases 7-9 were added after this table's original phase numbering, via `spec-gap-closure-plan.md` (2026-09-11, addendum 2026-09-15), to close gaps found against `thailand_alcohol_import_sales_system_overview.pdf`. Phase 7's requirements (COMPANY-01, PERMIT-01..04) were registered and are now done. Phase 8's requirements (SHIPMENT, QUOTE, BILLING groups above) were registered 2026-09-14. Phase 9's requirements (LICENSE group) were registered 2026-09-15 — closing the §6 permit-model gap identified after Phase 7 shipped (status field, governing authority, attachments, renewal chain, RBAC-gated status transitions).
 
 ---
 *Requirements defined: 2026-09-03*
-*Last updated: 2026-09-14 — Phase 7 marked done; SHIPMENT/QUOTE/BILLING (Phase 8) requirements added from `spec-gap-closure-plan.md`*
+*Last updated: 2026-09-15 — Phase 9 (LICENSE) requirements added from `spec-gap-closure-plan.md` addendum*
