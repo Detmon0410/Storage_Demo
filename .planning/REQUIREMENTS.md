@@ -54,7 +54,8 @@
 **: Creating a sales order decreases the selected lot's on-hand quantity within the same transaction
 - [x] **STOCK-03
 **: Deleting or editing a sales order restores the previous lot quantity before applying the new quantity
-- [ ] **STOCK-04**: Import receiving creates or updates inventory lots with received quantity, warehouse, received date, and lot/batch number
+- [x] **STOCK-04
+**: Import receiving creates or updates inventory lots with received quantity, warehouse, received date, and lot/batch number
 - [ ] **STOCK-05**: Stock transactions reference product, lot/batch, source document, and movement type
 - [ ] **STOCK-06**: Manual stock quantity edits are not permitted directly; corrections require an audited stock-adjustment transaction with a reason code
 
