@@ -115,7 +115,7 @@ describe("Order approve/reject no-self-approval enforcement", () => {
         incoterms: "FOB",
         orderDate: new Date().toISOString(),
         etaDate: new Date(Date.now() + 30 * 86400000).toISOString(),
-        status: "PENDING",
+        status: "STAGING",
         items: [{ productId: importProductId, quantity: 1, unitPrice: 10 }],
       });
     expect(createRes.status).toBe(201);
