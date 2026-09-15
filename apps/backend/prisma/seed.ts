@@ -745,6 +745,26 @@ async function main() {
     });
   }
 
+  // Create inventory lots (see `inventoryStocks` array/comment above) here, ahead of the
+  // salesOrders block below, so every lot referenced by a sales order item's inventoryStockId
+  // FK already exists by the time those rows are created.
+  const lotIdByKey = new Map<string, number>(); // `${productCode}::${lotBatch}` -> inventoryStockId
+  for (const [productCode, lotBatch, receivedDate, quantityOnHand, stockAgeDays, stockStatus, warehouse, sourceOrderNo] of inventoryStocks) {
+    const created = await prisma.inventoryStock.create({
+      data: {
+        productId: productIdByCode.get(productCode)!,
+        importOrderItemId: sourceOrderNo === "-" ? null : importOrderItemIdByKey.get(`${sourceOrderNo}::${productCode}`),
+        lotBatch,
+        receivedDate: date(receivedDate),
+        quantityOnHand,
+        stockAgeDays,
+        stockStatus,
+        warehouse,
+      },
+    });
+    lotIdByKey.set(`${productCode}::${lotBatch}`, created.inventoryStockId);
+  }
+
   const company = await prisma.company.create({
     data: {
       companyId: 1,
@@ -838,6 +858,12 @@ async function main() {
     const itemRows = order.items.map((item) => {
       const discounted = item.quantity * item.unitPrice * (1 - item.discount / 100);
       const taxAmount = discounted * (SALES_TAX_RATE / 100);
+      const inventoryStockId = lotIdByKey.get(`${item.productCode}::${item.lotBatch}`);
+      if (inventoryStockId === undefined) {
+        throw new Error(
+          `Seed data error: no InventoryStock lot found for orderNo=${order.orderNo} productCode=${item.productCode} lotBatch=${item.lotBatch}`,
+        );
+      }
       return {
         productId: productIdByCode.get(item.productCode)!,
         quantity: item.quantity,
@@ -845,7 +871,7 @@ async function main() {
         discount: item.discount,
         taxRate: SALES_TAX_RATE,
         taxAmount,
-        lotBatch: item.lotBatch,
+        inventoryStockId,
         netValue: discounted + taxAmount,
       };
     });
@@ -871,21 +897,6 @@ async function main() {
               licenseExpirySnapshot: license.expiryDate,
             }
           : {}),
-      },
-    });
-  }
-
-  for (const [productCode, lotBatch, receivedDate, quantityOnHand, stockAgeDays, stockStatus, warehouse, sourceOrderNo] of inventoryStocks) {
-    await prisma.inventoryStock.create({
-      data: {
-        productId: productIdByCode.get(productCode)!,
-        importOrderItemId: sourceOrderNo === "-" ? null : importOrderItemIdByKey.get(`${sourceOrderNo}::${productCode}`),
-        lotBatch,
-        receivedDate: date(receivedDate),
-        quantityOnHand,
-        stockAgeDays,
-        stockStatus,
-        warehouse,
       },
     });
   }
@@ -928,6 +939,21 @@ async function main() {
     items: [{ productId: productIdByCode.get("SKU-1012")!, quantity: 240, unitPrice: 820, taxRate: importTaxRateByCode["SKU-1012"] }],
   });
 
+  // SKU-1012's LOT-A2608-05 isn't part of the bulk-seeded `inventoryStocks` array above, so
+  // create it directly here (this showcase order is the only seed reference to it).
+  const showcaseLot = await prisma.inventoryStock.create({
+    data: {
+      productId: productIdByCode.get("SKU-1012")!,
+      lotBatch: "LOT-A2608-05",
+      receivedDate: date("2026-08-13"),
+      quantityOnHand: 200,
+      stockAgeDays: 5,
+      stockStatus: "NORMAL",
+      warehouse: "Warehouse A - Tokyo",
+    },
+  });
+  lotIdByKey.set(`SKU-1012::LOT-A2608-05`, showcaseLot.inventoryStockId);
+
   await SalesOrderModel.create({
     orderNo: "SO-2026-3310",
     customerId: customerIdByCode.get("CUS-0003")!,
@@ -935,8 +961,22 @@ async function main() {
     deliveryStatus: "PENDING",
     invoiceNo: "INV-2026-8810",
     items: [
-      { productId: productIdByCode.get("SKU-1012")!, quantity: 36, unitPrice: 1250, discount: 5, taxRate: SALES_TAX_RATE, lotBatch: "LOT-A2608-05" },
-      { productId: productIdByCode.get("SKU-1010")!, quantity: 8, unitPrice: 3200, discount: 5, taxRate: SALES_TAX_RATE, lotBatch: "LOT-A2607-02" },
+      {
+        productId: productIdByCode.get("SKU-1012")!,
+        quantity: 36,
+        unitPrice: 1250,
+        discount: 5,
+        taxRate: SALES_TAX_RATE,
+        inventoryStockId: lotIdByKey.get("SKU-1012::LOT-A2608-05")!,
+      },
+      {
+        productId: productIdByCode.get("SKU-1010")!,
+        quantity: 8,
+        unitPrice: 3200,
+        discount: 5,
+        taxRate: SALES_TAX_RATE,
+        inventoryStockId: lotIdByKey.get("SKU-1010::LOT-A2607-02")!,
+      },
     ],
   });
 
