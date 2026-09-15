@@ -253,4 +253,49 @@ describe("Order approve/reject no-self-approval enforcement", () => {
     expect(approveRes.status).toBe(200);
     expect(approveRes.body.status).toBe("APPROVED");
   });
+
+  it("rejects the last editor's (updatedById) own SalesOrder approve attempt with 403 mentioning 'last edited', but allows a third-party approver to approve it (200)", async () => {
+    const creator = await createTestUserWithRoles("nsa_sales_edit_creator", ["SALES_OFFICER"]);
+    const editor = await createTestUserWithRoles("nsa_sales_edit_editor", ["SALES_OFFICER", "MANAGER_APPROVER"]);
+    const finalApprover = await createTestUserWithRoles("nsa_sales_edit_approver", ["MANAGER_APPROVER"]);
+    const creatorToken = await loginAs(creator.username, creator.password);
+    const editorToken = await loginAs(editor.username, editor.password);
+    const finalApproverToken = await loginAs(finalApprover.username, finalApprover.password);
+
+    const orderNo = `TEST_NSA_SALE_EDIT_${Date.now()}`;
+    const createRes = await request(app)
+      .post("/api/sales-orders")
+      .set("Authorization", `Bearer ${creatorToken}`)
+      .send({
+        orderNo,
+        customerId,
+        customerLicenseId,
+        deliveryStatus: "PENDING",
+        invoiceNo: `INV-${orderNo}`,
+        items: [{ productId: salesProductId, quantity: 1, unitPrice: 10, discount: 0, inventoryStockId: salesInventoryStockId }],
+      });
+    expect(createRes.status).toBe(201);
+    createdSalesOrderNos.push(orderNo);
+    const salesOrderId = createRes.body.salesOrderId;
+
+    const editRes = await request(app)
+      .put(`/api/sales-orders/${salesOrderId}`)
+      .set("Authorization", `Bearer ${editorToken}`)
+      .send({ invoiceNo: `INV-${orderNo}-EDITED` });
+    expect(editRes.status).toBe(200);
+
+    const editorApproveRes = await request(app)
+      .post(`/api/sales-orders/${salesOrderId}/approve`)
+      .set("Authorization", `Bearer ${editorToken}`)
+      .send({});
+    expect(editorApproveRes.status).toBe(403);
+    expect(editorApproveRes.body.error.toLowerCase()).toContain("last edited");
+
+    const approveRes = await request(app)
+      .post(`/api/sales-orders/${salesOrderId}/approve`)
+      .set("Authorization", `Bearer ${finalApproverToken}`)
+      .send({});
+    expect(approveRes.status).toBe(200);
+    expect(approveRes.body.deliveryStatus).toBe("APPROVED");
+  });
 });
