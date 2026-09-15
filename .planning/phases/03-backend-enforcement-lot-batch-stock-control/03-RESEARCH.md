@@ -536,7 +536,7 @@ if (existing.createdById != null && existing.createdById === req.userId) {
 `[ASSUMED]` in this table — this codebase-research is HIGH confidence because it's grounded in
 direct file reads, not training-data guesses about typical Prisma/Express patterns.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does STOCK-01 require removing `Product.stockQty` as a stored column, or just keeping it
    synced?**
@@ -554,6 +554,7 @@ direct file reads, not training-data guesses about typical Prisma/Express patter
      explicitly for the planner/user to confirm rather than assume silently, since it affects whether
      a data-integrity job (recomputing `stockQty` from lot sums) is needed as a startup/migration
      task.
+   - **Resolution:** RESOLVED — 03-02-PLAN.md Task 3 adopted recommendation (a): same-transaction sync, `Product.stockQty` remains a directly-incremented column alongside `InventoryStock.quantityOnHand`, both updated in the same transaction via `createStockTransactionTx`/`reverseAndDeleteByReferenceTx`. No aggregate-on-read or data-integrity migration job was needed.
 
 2. **Does ENFORCE-06's "or last edited" clause require a new `lastEditedById`/`updatedById` column
    this phase, or is it explicitly deferred?**
@@ -567,6 +568,7 @@ direct file reads, not training-data guesses about typical Prisma/Express patter
      silently either (a) adding a new column+check unprompted (which would contradict the locked
      CONTEXT.md decision saying "no new logic needed"), or (b) silently leaving ENFORCE-06
      incompletely satisfied. This is exactly the kind of gap a plan-checker should catch.
+   - **Resolution:** RESOLVED — CONTEXT.md D-09 confirms the "last edited" clause is in-scope this phase: a new `updatedById` column was added to `SalesOrder` and checked alongside `createdById` in the approve/reject self-approval guard; implemented in 03-04-PLAN.md.
 
 3. **Should `ImportOrder` items be editable at all once `status === "RECEIVED"` (i.e., lots already
    created), and if so, how does reverse-then-reapply interact with lots already referenced by sales
@@ -581,6 +583,7 @@ direct file reads, not training-data guesses about typical Prisma/Express patter
      clear `HttpError(400, "Cannot edit items on a received import order; use a stock-adjustment
      instead")`, redirecting corrections through D-06's adjustment path. Confirm with planner/user
      before implementation since this is a new business rule not explicitly stated in CONTEXT.md.
+   - **Resolution:** RESOLVED — CONTEXT.md D-10 locks the simplest-safe-default recommendation: once `status === "RECEIVED"`, item edits are rejected with `HttpError(400, "Cannot edit items on a received import order; use a stock-adjustment instead")`; implemented in 03-05-PLAN.md Task 1.
 
 4. **Lot/batch numbering: auto-generate vs. capture explicit lot number from receiving user?**
    - What we know: D-04 explicitly leaves this to planner discretion, preferring auto-generated with
@@ -593,6 +596,7 @@ direct file reads, not training-data guesses about typical Prisma/Express patter
      this research session) for any existing lot/batch input before deciding; if none exists,
      auto-generate via `{orderNo}-{itemIndex}` (matching `stockReference.ts`'s existing convention)
      with an optional override field is the lowest-risk default per D-04's own guidance.
+   - **Resolution:** RESOLVED — 03-05-PLAN.md confirmed via grep of `apps/frontend/src/pages/ImportOrdersPage.tsx` that no lot/batch-number input field exists in the receiving UI; auto-generated `{orderNo}-{itemIndex+1}` numbering was adopted, no override field added this phase.
 
 ## Environment Availability
 
