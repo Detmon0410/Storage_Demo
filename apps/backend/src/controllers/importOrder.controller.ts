@@ -17,13 +17,42 @@ const parseItems = (value: unknown): ImportOrderItemInput[] => {
     if (productId == null || quantity == null || unitPrice == null) {
       throw new HttpError(400, "each item requires productId, quantity, and unitPrice");
     }
+    const qty = Number(quantity);
+    const price = Number(unitPrice);
+    if (qty <= 0) throw new HttpError(400, "quantity must be a positive number");
+    if (price < 0) throw new HttpError(400, "unitPrice must not be negative");
     return {
       productId: Number(productId),
-      quantity: Number(quantity),
-      unitPrice: Number(unitPrice),
+      quantity: qty,
+      unitPrice: price,
       taxRate: taxRate == null ? 0 : Number(taxRate),
     };
   });
+};
+
+const IMPORT_STATUS_VALUES = ["STAGING", "PENDING_APPROVAL", "APPROVED", "CUSTOMS_CLEARED", "RECEIVED", "ISSUE", "REJECTED"];
+const IMPORT_STATUS_PIPELINE: Record<string, number> = {
+  STAGING: 0,
+  PENDING_APPROVAL: 1,
+  APPROVED: 2,
+  CUSTOMS_CLEARED: 3,
+  RECEIVED: 4,
+  ISSUE: 5,
+};
+
+const assertValidImportStatusTransition = (newStatus: string, currentStatus?: string) => {
+  if (!IMPORT_STATUS_VALUES.includes(newStatus)) {
+    throw new HttpError(400, `invalid status "${newStatus}"; must be one of ${IMPORT_STATUS_VALUES.join(", ")}`);
+  }
+  if (currentStatus == null || currentStatus === newStatus) return;
+  if (currentStatus === "REJECTED" || currentStatus === "ISSUE") {
+    throw new HttpError(400, `invalid status transition: cannot change status from terminal state "${currentStatus}"`);
+  }
+  const fromIndex = IMPORT_STATUS_PIPELINE[currentStatus];
+  const toIndex = IMPORT_STATUS_PIPELINE[newStatus];
+  if (fromIndex != null && toIndex != null && toIndex < fromIndex) {
+    throw new HttpError(400, `invalid status transition from "${currentStatus}" to "${newStatus}"`);
+  }
 };
 
 export const listImportOrders = asyncHandler(async (_req, res) => {
@@ -42,6 +71,7 @@ export const createImportOrder = asyncHandler(async (req: AuthenticatedRequest, 
   if (!orderNo || !supplierId || !country || !incoterms || !orderDate || !etaDate || !status) {
     throw new HttpError(400, "orderNo, supplierId, country, incoterms, orderDate, etaDate, and status are required");
   }
+  assertValidImportStatusTransition(status);
   const order = await prisma.$transaction(async (tx) => {
     const created = await ImportOrderModel.create(
       {
@@ -83,6 +113,10 @@ export const updateImportOrder = asyncHandler(async (req: AuthenticatedRequest, 
   const importOrderId = Number(req.params.id);
   const before = await ImportOrderModel.findById(importOrderId);
   if (!before) throw new HttpError(404, "Import order not found");
+
+  if (status != null) {
+    assertValidImportStatusTransition(status, before.status);
+  }
 
   const order = await prisma.$transaction(async (tx) => {
     const updated = await ImportOrderModel.update(
