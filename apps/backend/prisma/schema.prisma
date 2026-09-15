@@ -80,16 +80,18 @@ enum TransactionType {
 }
 
 model StockTransaction {
-  transactionId   Int             @id @default(autoincrement()) @map("transaction_id")
-  transactionNo   String          @unique @map("transaction_no")
-  productId       Int             @map("product_id")
-  transactionType TransactionType @map("transaction_type")
-  quantity        Int
-  transactionDate DateTime        @default(now()) @map("transaction_date")
-  referenceNo     String?         @map("reference_no")
-  note            String?
+  transactionId    Int             @id @default(autoincrement()) @map("transaction_id")
+  transactionNo    String          @unique @map("transaction_no")
+  productId        Int             @map("product_id")
+  transactionType  TransactionType @map("transaction_type")
+  quantity         Int
+  transactionDate  DateTime        @default(now()) @map("transaction_date")
+  referenceNo      String?         @map("reference_no")
+  note             String?
+  inventoryStockId Int?            @map("inventory_stock_id")
 
-  product Product @relation(fields: [productId], references: [productId])
+  product        Product         @relation(fields: [productId], references: [productId])
+  inventoryStock InventoryStock? @relation(fields: [inventoryStockId], references: [inventoryStockId], onDelete: SetNull)
 
   @@map("stock_transactions")
 }
@@ -206,15 +208,17 @@ model Customer {
 }
 
 model SalesOrder {
-  salesOrderId   Int     @id @default(autoincrement()) @map("sales_order_id")
-  orderNo        String  @unique @map("order_no")
-  customerId     Int     @map("customer_id")
-  netValue       Decimal @map("net_value") @db.Decimal(14, 2)
-  taxTotal       Decimal @default(0) @map("tax_total") @db.Decimal(14, 2)
-  deliveryStatus String  @map("delivery_status")
-  invoiceNo      String  @map("invoice_no")
-  approver       String?
-  createdById    Int?    @map("created_by_id")
+  salesOrderId     Int     @id @default(autoincrement()) @map("sales_order_id")
+  orderNo          String  @unique @map("order_no")
+  customerId       Int     @map("customer_id")
+  netValue         Decimal @map("net_value") @db.Decimal(14, 2)
+  taxTotal         Decimal @default(0) @map("tax_total") @db.Decimal(14, 2)
+  deliveryStatus   String  @map("delivery_status")
+  invoiceNo        String  @map("invoice_no")
+  approver         String?
+  createdById      Int?    @map("created_by_id")
+  requiresApproval Boolean @default(false) @map("requires_approval")
+  updatedById      Int?    @map("updated_by_id")
 
   customerLicenseId     Int?      @map("customer_license_id")
   licenseNumberSnapshot String?   @map("license_number_snapshot")
@@ -225,6 +229,7 @@ model SalesOrder {
   customerLicense CustomerLicense? @relation(fields: [customerLicenseId], references: [customerLicenseId], onDelete: Restrict)
   items           SalesOrderItem[]
   createdBy       User?            @relation("CreatedSalesOrders", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy       User?            @relation("UpdatedSalesOrders", fields: [updatedById], references: [id], onDelete: SetNull)
 
   @@map("sales_orders")
 }
@@ -239,10 +244,11 @@ model SalesOrderItem {
   taxRate          Decimal @default(0) @map("tax_rate") @db.Decimal(5, 2)
   taxAmount        Decimal @default(0) @map("tax_amount") @db.Decimal(14, 2)
   netValue         Decimal @map("net_value") @db.Decimal(14, 2)
-  lotBatch         String  @map("lot_batch")
+  inventoryStockId Int     @map("inventory_stock_id")
 
-  salesOrder SalesOrder @relation(fields: [salesOrderId], references: [salesOrderId], onDelete: Cascade)
-  product    Product    @relation(fields: [productId], references: [productId])
+  salesOrder     SalesOrder     @relation(fields: [salesOrderId], references: [salesOrderId], onDelete: Cascade)
+  product        Product        @relation(fields: [productId], references: [productId])
+  inventoryStock InventoryStock @relation(fields: [inventoryStockId], references: [inventoryStockId], onDelete: Restrict)
 
   @@map("sales_order_items")
 }
@@ -260,6 +266,9 @@ model InventoryStock {
 
   product         Product          @relation(fields: [productId], references: [productId])
   importOrderItem ImportOrderItem? @relation(fields: [importOrderItemId], references: [importOrderItemId], onDelete: SetNull)
+
+  salesOrderItems   SalesOrderItem[]
+  stockTransactions StockTransaction[]
 
   @@unique([productId, lotBatch])
   @@map("inventory_stock")
@@ -291,6 +300,7 @@ model User {
   auditLogs           AuditLog[]
   createdImportOrders ImportOrder[] @relation("CreatedImportOrders")
   createdSalesOrders  SalesOrder[]  @relation("CreatedSalesOrders")
+  updatedSalesOrders  SalesOrder[]  @relation("UpdatedSalesOrders")
 
   @@map("users")
 }
