@@ -33,18 +33,27 @@
 
 ### Backend Business Rule Enforcement (ENFORCE)
 
-- [ ] **ENFORCE-01**: Backend rejects a sales order if the customer's liquor license is expired, revoked, suspended, or missing
-- [ ] **ENFORCE-02**: Backend rejects a sales order line that exceeds the selected lot/batch's available quantity
-- [ ] **ENFORCE-03**: Backend rejects a sales order that exceeds the customer's credit limit unless routed through approval
-- [ ] **ENFORCE-04**: Backend requires approval when a discount exceeds the customer's allowed discount limit
-- [ ] **ENFORCE-05**: Backend rejects negative quantities, invalid prices, invalid discounts, and invalid status transitions with a clear error message
-- [ ] **ENFORCE-06**: A user cannot approve a transaction they created or last edited, regardless of their role combination
+- [x] **ENFORCE-01
+**: Backend rejects a sales order if the customer's liquor license is expired, revoked, suspended, or missing
+- [x] **ENFORCE-02
+**: Backend rejects a sales order line that exceeds the selected lot/batch's available quantity
+- [x] **ENFORCE-03
+**: Backend rejects a sales order that exceeds the customer's credit limit unless routed through approval
+- [x] **ENFORCE-04
+**: Backend requires approval when a discount exceeds the customer's allowed discount limit
+- [x] **ENFORCE-05
+**: Backend rejects negative quantities, invalid prices, invalid discounts, and invalid status transitions with a clear error message
+- [x] **ENFORCE-06
+**: A user cannot approve a transaction they created or last edited, regardless of their role combination
 
 ### Lot/Batch Stock Control (STOCK)
 
-- [ ] **STOCK-01**: `InventoryStock` (lot/batch level) is the source of truth for stock quantity; product-level stock is derived/synced from it, not maintained independently
-- [ ] **STOCK-02**: Creating a sales order decreases the selected lot's on-hand quantity within the same transaction
-- [ ] **STOCK-03**: Deleting or editing a sales order restores the previous lot quantity before applying the new quantity
+- [x] **STOCK-01
+**: `InventoryStock` (lot/batch level) is the source of truth for stock quantity; product-level stock is derived/synced from it, not maintained independently
+- [x] **STOCK-02
+**: Creating a sales order decreases the selected lot's on-hand quantity within the same transaction
+- [x] **STOCK-03
+**: Deleting or editing a sales order restores the previous lot quantity before applying the new quantity
 - [ ] **STOCK-04**: Import receiving creates or updates inventory lots with received quantity, warehouse, received date, and lot/batch number
 - [ ] **STOCK-05**: Stock transactions reference product, lot/batch, source document, and movement type
 - [ ] **STOCK-06**: Manual stock quantity edits are not permitted directly; corrections require an audited stock-adjustment transaction with a reason code
