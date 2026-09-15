@@ -13,8 +13,12 @@ export function Topbar({ title, onMenuClick }: { title: string; onMenuClick: () 
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleLogout = async () => {
-    await logout();
+    // Navigate away from the protected page first so RequireAuth never sees the
+    // access token clear while still mounted here — otherwise it redirects with
+    // state: { from: <this page> }, which sends the next login back here instead
+    // of the dashboard.
     navigate("/login", { replace: true });
+    await logout();
   };
 
   return (
