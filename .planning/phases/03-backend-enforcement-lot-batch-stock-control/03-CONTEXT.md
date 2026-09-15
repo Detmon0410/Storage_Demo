@@ -87,6 +87,20 @@ used for import/sales order approve/reject ahead of the full workflow.
   `orderNo` — D-04's numbering note leaves room for either.
 - HTTP verb/endpoint shape for the new stock-adjustment action.
 
+### Resolved from Research (2026-09-15, post-RESEARCH.md)
+- **D-07:** `SalesOrderItem.lotBatch` FK conversion (D-01) includes the frontend fix — `SalesOrdersPage.tsx`
+  currently sends `lotBatch` as a free string from its lot dropdown; it must send `inventoryStockId`
+  instead. Frontend payload change is in-scope this phase, not deferred.
+- **D-08:** `StockTransaction` gets a new `inventoryStockId` FK field (currently has none) to satisfy
+  STOCK-05's literal requirement that every stock transaction record product, lot, source document, and
+  movement type.
+- **D-09:** ENFORCE-06 no-self-approval check is extended to cover "last edited" as well as "created by" —
+  add `updatedById` tracking to `SalesOrder` (and check both `createdById` and `updatedById` against the
+  approver) alongside this phase's other `SalesOrder` schema changes.
+- **D-10:** Once an `ImportOrder` reaches `RECEIVED` status, its items become read-only — reject edits to
+  received orders' line items (lots may already be consumed by sales orders); corrections route through
+  the new stock-adjustment path (D-06) instead.
+
 </decisions>
 
 <canonical_refs>
