@@ -152,7 +152,7 @@ export interface SalesOrderItem {
   taxRate: string;
   taxAmount: string;
   netValue: string;
-  lotBatch: string;
+  inventoryStockId: number;
   product?: Product;
 }
 

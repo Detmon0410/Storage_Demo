@@ -19,7 +19,7 @@ import { isCustomerLicenseValid } from "./customers/CustomerLicensesPanel";
 import { formatCurrency, formatDate } from "../lib/format";
 import { statusTone } from "../lib/status";
 
-type ItemRow = { productId: string; quantity: string; unitPrice: string; discount: string; taxRate: string; lotBatch: string };
+type ItemRow = { productId: string; quantity: string; unitPrice: string; discount: string; taxRate: string; inventoryStockId: string };
 
 type FormState = {
   orderNo: string;
@@ -41,7 +41,7 @@ const emptyForm: FormState = {
   items: [],
 };
 
-const emptyItem: ItemRow = { productId: "", quantity: "1", unitPrice: "", discount: "", taxRate: "", lotBatch: "" };
+const emptyItem: ItemRow = { productId: "", quantity: "1", unitPrice: "", discount: "", taxRate: "", inventoryStockId: "" };
 
 const DELIVERY_OPTIONS = ["PENDING", "SHIPPING", "DELIVERED", "RETURNED", "DAMAGED"];
 
@@ -175,7 +175,7 @@ export function SalesOrdersPage() {
         unitPrice: item.unitPrice,
         discount: item.discount,
         taxRate: item.taxRate ?? "0",
-        lotBatch: item.lotBatch,
+        inventoryStockId: String(item.inventoryStockId),
       })),
     });
     setEditing(row);
@@ -193,7 +193,7 @@ export function SalesOrdersPage() {
       toast.error(t("salesOrder.toastFillAll"));
       return;
     }
-    if (form.items.length === 0 || form.items.some((i) => !i.productId || !i.quantity || !i.unitPrice || !i.lotBatch)) {
+    if (form.items.length === 0 || form.items.some((i) => !i.productId || !i.quantity || !i.unitPrice || !i.inventoryStockId)) {
       toast.error(t("salesOrder.toastItemsRequired"));
       return;
     }
@@ -215,7 +215,7 @@ export function SalesOrdersPage() {
           unitPrice: Number(item.unitPrice),
           discount: Number(item.discount || 0),
           taxRate: Number(item.taxRate || 0),
-          lotBatch: item.lotBatch,
+          inventoryStockId: Number(item.inventoryStockId),
         })),
       };
       if (editing) {
@@ -451,7 +451,7 @@ export function SalesOrdersPage() {
                               value={item.productId}
                               onChange={(e) => {
                                 const product = products.find((p) => String(p.productId) === e.target.value);
-                                updateItem(index, { productId: e.target.value, unitPrice: item.unitPrice || product?.unitPrice || "", lotBatch: "" });
+                                updateItem(index, { productId: e.target.value, unitPrice: item.unitPrice || product?.unitPrice || "", inventoryStockId: "" });
                               }}
                               className="bg-white"
                             >
@@ -511,14 +511,14 @@ export function SalesOrdersPage() {
                           <Button variant="ghost" size="sm" onClick={() => removeItem(index)} icon={<X className="h-3.5 w-3.5 text-rose-500" />} />
                         </div>
                         <SelectField
-                          value={item.lotBatch}
-                          onChange={(e) => updateItem(index, { lotBatch: e.target.value })}
+                          value={item.inventoryStockId}
+                          onChange={(e) => updateItem(index, { inventoryStockId: e.target.value })}
                           disabled={!item.productId}
                           className="bg-white"
                         >
                           <option value="">{t("salesOrder.items.lotPlaceholder")}</option>
                           {lots.map((l) => (
-                            <option key={l.inventoryStockId} value={l.lotBatch}>
+                            <option key={l.inventoryStockId} value={l.inventoryStockId}>
                               {l.lotBatch} ({l.quantityOnHand} · {l.warehouse})
                             </option>
                           ))}
