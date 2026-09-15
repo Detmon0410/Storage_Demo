@@ -136,7 +136,7 @@ describe("ImportOrderModel receiving gate (D-04/D-10)", () => {
       ImportOrderModel.update(created.importOrderId, {
         items: [{ productId, quantity: 99, unitPrice: 10 }],
       }),
-    ).rejects.toMatchObject({ statusCode: 400 });
+    ).rejects.toMatchObject({ status: 400 });
 
     try {
       await ImportOrderModel.update(created.importOrderId, {

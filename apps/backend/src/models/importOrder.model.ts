@@ -17,6 +17,8 @@ export interface ImportOrderItemInput {
   quantity: number;
   unitPrice: number;
   taxRate?: number;
+  warehouse?: string;
+  stockStatus?: string;
 }
 
 const toItemRows = (items: ImportOrderItemInput[]) =>
@@ -40,16 +42,36 @@ const orderTotals = (rows: ReturnType<typeof toItemRows>) => {
   return { taxTotal, totalValue };
 };
 
-const createStockInTx = async (tx: Prisma.TransactionClient, orderNo: string, items: ImportOrderItemInput[]) => {
+const createOrUpdateLotsFromReceivingTx = async (
+  tx: Prisma.TransactionClient,
+  orderNo: string,
+  items: (ImportOrderItemInput & { importOrderItemId?: number })[],
+) => {
   const referenceNo = importOrderStockReference(orderNo);
   for (const [index, item] of items.entries()) {
+    // quantityOnHand starts at 0 here — createStockTransactionTx below increments it to
+    // item.quantity via its InventoryStock sync (03-02), so setting it directly here too
+    // would double-count the received quantity.
+    const lot = await tx.inventoryStock.create({
+      data: {
+        productId: item.productId,
+        importOrderItemId: item.importOrderItemId ?? null,
+        lotBatch: `${orderNo}-${index + 1}`,
+        receivedDate: new Date(),
+        quantityOnHand: 0,
+        stockAgeDays: 0,
+        stockStatus: item.stockStatus ?? "NORMAL",
+        warehouse: item.warehouse ?? "Unassigned",
+      },
+    });
     await createStockTransactionTx(tx, {
       transactionNo: `${referenceNo}-${index + 1}`,
       productId: item.productId,
       transactionType: "IN",
       quantity: item.quantity,
       referenceNo,
-      note: `Auto-generated from import order ${orderNo}`,
+      inventoryStockId: lot.inventoryStockId,
+      note: `Auto-generated from import order ${orderNo} (received)`,
     });
   }
 };
@@ -104,7 +126,14 @@ export const ImportOrderModel = {
         },
         include: withRelations,
       });
-      await createStockInTx(tx as Prisma.TransactionClient, data.orderNo, data.items);
+      if (data.status === "RECEIVED") {
+        const createdItems = await tx.importOrderItem.findMany({ where: { importOrderId: order.importOrderId } });
+        const itemsWithIds = data.items.map((item, index) => ({
+          ...item,
+          importOrderItemId: createdItems[index]?.importOrderItemId,
+        }));
+        await createOrUpdateLotsFromReceivingTx(tx as Prisma.TransactionClient, data.orderNo, itemsWithIds);
+      }
       return order;
     };
     return "$transaction" in client ? client.$transaction((tx) => run(tx)) : run(client);
@@ -133,11 +162,20 @@ export const ImportOrderModel = {
 
     const rows = toItemRows(items);
     const run = async (tx: Client) => {
-      const existing = await tx.importOrder.findUnique({ where: { importOrderId }, select: { orderNo: true } });
-      if (!existing) throw new HttpError(404, "Import order not found");
+      const existingStatus = await tx.importOrder.findUnique({
+        where: { importOrderId },
+        select: { orderNo: true, status: true },
+      });
+      if (!existingStatus) throw new HttpError(404, "Import order not found");
+      if (existingStatus.status === "RECEIVED") {
+        throw new HttpError(400, "Cannot edit items on a received import order; use a stock-adjustment instead");
+      }
 
       await assertProductsNotBlockedTx(tx as Prisma.TransactionClient, items.map((i) => i.productId));
-      await reverseAndDeleteByReferenceTx(tx as Prisma.TransactionClient, importOrderStockReference(existing.orderNo));
+      await reverseAndDeleteByReferenceTx(
+        tx as Prisma.TransactionClient,
+        importOrderStockReference(existingStatus.orderNo),
+      );
       await tx.importOrderItem.deleteMany({ where: { importOrderId } });
 
       const updated = await tx.importOrder.update({
@@ -151,8 +189,15 @@ export const ImportOrderModel = {
         include: withRelations,
       });
 
-      const orderNo = data.orderNo ?? existing.orderNo;
-      await createStockInTx(tx as Prisma.TransactionClient, orderNo, items);
+      const orderNo = data.orderNo ?? existingStatus.orderNo;
+      if (data.status === "RECEIVED" && existingStatus.status !== "RECEIVED") {
+        const createdItems = await tx.importOrderItem.findMany({ where: { importOrderId } });
+        const itemsWithIds = items.map((item, index) => ({
+          ...item,
+          importOrderItemId: createdItems[index]?.importOrderItemId,
+        }));
+        await createOrUpdateLotsFromReceivingTx(tx as Prisma.TransactionClient, orderNo, itemsWithIds);
+      }
       return updated;
     };
     return "$transaction" in client ? client.$transaction((tx) => run(tx)) : run(client);

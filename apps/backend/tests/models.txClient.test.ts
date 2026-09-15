@@ -124,7 +124,7 @@ describe("Model tx-client injection regression", () => {
       incoterms: "FOB",
       orderDate: new Date(),
       etaDate: new Date(Date.now() + 30 * 86400000),
-      status: "PENDING",
+      status: "RECEIVED",
       items: [{ productId: importProductId, quantity: 5, unitPrice: 10 }],
     });
     createdImportOrderNos.push(orderNo);
