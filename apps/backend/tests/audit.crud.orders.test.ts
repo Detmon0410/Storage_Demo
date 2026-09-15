@@ -12,6 +12,7 @@ describe("ImportOrder and SalesOrder CRUD audit logging", () => {
   let salesProductId: number;
   let customerId: number;
   let customerLicenseId: number;
+  let salesInventoryStockId: number;
   const createdImportOrderNos: string[] = [];
   const createdSalesOrderNos: string[] = [];
 
@@ -83,6 +84,19 @@ describe("ImportOrder and SalesOrder CRUD audit logging", () => {
       },
     });
     customerLicenseId = customerLicense.customerLicenseId;
+
+    const salesInventoryStock = await prisma.inventoryStock.create({
+      data: {
+        productId: salesProductId,
+        lotBatch: `TEST_ACO_LOT_${Date.now()}`,
+        receivedDate: new Date(),
+        quantityOnHand: 1000,
+        stockAgeDays: 0,
+        stockStatus: "AVAILABLE",
+        warehouse: "MAIN",
+      },
+    });
+    salesInventoryStockId = salesInventoryStock.inventoryStockId;
   });
 
   afterAll(async () => {
@@ -94,6 +108,7 @@ describe("ImportOrder and SalesOrder CRUD audit logging", () => {
     });
     await prisma.salesOrder.deleteMany({ where: { orderNo: { in: createdSalesOrderNos } } });
     await prisma.importOrder.deleteMany({ where: { orderNo: { in: createdImportOrderNos } } });
+    await prisma.inventoryStock.deleteMany({ where: { inventoryStockId: salesInventoryStockId } });
     await prisma.customerLicense.deleteMany({ where: { customerLicenseId } });
     await prisma.customer.deleteMany({ where: { customerId } });
     await prisma.product.deleteMany({ where: { productId: { in: [importProductId, salesProductId] } } });
@@ -164,7 +179,7 @@ describe("ImportOrder and SalesOrder CRUD audit logging", () => {
         customerLicenseId,
         deliveryStatus: "PENDING",
         invoiceNo: `INV-${orderNo}`,
-        items: [{ productId: salesProductId, quantity: 2, unitPrice: 10, discount: 0, lotBatch: "LOT-1" }],
+        items: [{ productId: salesProductId, quantity: 2, unitPrice: 10, discount: 0, inventoryStockId: salesInventoryStockId }],
       });
     expect(createRes.status).toBe(201);
     createdSalesOrderNos.push(orderNo);

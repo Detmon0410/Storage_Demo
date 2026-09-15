@@ -12,6 +12,8 @@ describe("Sales order backend license-expiry blocking", () => {
   let customerLicenseId: number;
   let expiredPermitProductId: number;
   let cleanProductId: number;
+  let expiredPermitInventoryStockId: number;
+  let cleanInventoryStockId: number;
   const createdOrderNos: string[] = [];
   const createdLicenseIds: number[] = [];
 
@@ -96,6 +98,32 @@ describe("Sales order backend license-expiry blocking", () => {
       },
     });
     customerLicenseId = customerLicense.customerLicenseId;
+
+    const expiredPermitInventoryStock = await prisma.inventoryStock.create({
+      data: {
+        productId: expiredPermitProductId,
+        lotBatch: `TEST_SOLB_LOT_EXP_${Date.now()}`,
+        receivedDate: new Date(),
+        quantityOnHand: 1000,
+        stockAgeDays: 0,
+        stockStatus: "AVAILABLE",
+        warehouse: "MAIN",
+      },
+    });
+    expiredPermitInventoryStockId = expiredPermitInventoryStock.inventoryStockId;
+
+    const cleanInventoryStock = await prisma.inventoryStock.create({
+      data: {
+        productId: cleanProductId,
+        lotBatch: `TEST_SOLB_LOT_OK_${Date.now()}`,
+        receivedDate: new Date(),
+        quantityOnHand: 1000,
+        stockAgeDays: 0,
+        stockStatus: "AVAILABLE",
+        warehouse: "MAIN",
+      },
+    });
+    cleanInventoryStockId = cleanInventoryStock.inventoryStockId;
   });
 
   afterAll(async () => {
@@ -104,6 +132,7 @@ describe("Sales order backend license-expiry blocking", () => {
     await prisma.customer.deleteMany({ where: { customerId } });
     await prisma.license.deleteMany({ where: { licenseId: { in: createdLicenseIds } } });
     await prisma.stockTransaction.deleteMany({ where: { productId: { in: [expiredPermitProductId, cleanProductId] } } });
+    await prisma.inventoryStock.deleteMany({ where: { inventoryStockId: { in: [expiredPermitInventoryStockId, cleanInventoryStockId] } } });
     await prisma.product.deleteMany({ where: { productId: { in: [expiredPermitProductId, cleanProductId] } } });
     await prisma.supplier.deleteMany({ where: { supplierId } });
     await prisma.category.deleteMany({ where: { categoryId } });
@@ -121,7 +150,7 @@ describe("Sales order backend license-expiry blocking", () => {
         customerLicenseId,
         deliveryStatus: "PENDING",
         invoiceNo: `INV-${orderNo}`,
-        items: [{ productId: expiredPermitProductId, quantity: 2, unitPrice: 10, discount: 0, lotBatch: "LOT-1" }],
+        items: [{ productId: expiredPermitProductId, quantity: 2, unitPrice: 10, discount: 0, inventoryStockId: expiredPermitInventoryStockId }],
       });
 
     expect(res.status).toBe(400);
@@ -142,7 +171,7 @@ describe("Sales order backend license-expiry blocking", () => {
         customerLicenseId,
         deliveryStatus: "PENDING",
         invoiceNo: `INV-${orderNo}`,
-        items: [{ productId: cleanProductId, quantity: 2, unitPrice: 10, discount: 0, lotBatch: "LOT-1" }],
+        items: [{ productId: cleanProductId, quantity: 2, unitPrice: 10, discount: 0, inventoryStockId: cleanInventoryStockId }],
       });
 
     expect(res.status).toBe(201);
@@ -160,7 +189,7 @@ describe("Sales order backend license-expiry blocking", () => {
         customerLicenseId,
         deliveryStatus: "PENDING",
         invoiceNo: `INV-${orderNo}`,
-        items: [{ productId: cleanProductId, quantity: 2, unitPrice: 10, discount: 0, lotBatch: "LOT-1" }],
+        items: [{ productId: cleanProductId, quantity: 2, unitPrice: 10, discount: 0, inventoryStockId: cleanInventoryStockId }],
       });
     expect(createRes.status).toBe(201);
     createdOrderNos.push(orderNo);
@@ -171,8 +200,8 @@ describe("Sales order backend license-expiry blocking", () => {
       .set("Authorization", `Bearer ${accessToken}`)
       .send({
         items: [
-          { productId: cleanProductId, quantity: 2, unitPrice: 10, discount: 0, lotBatch: "LOT-1" },
-          { productId: expiredPermitProductId, quantity: 1, unitPrice: 10, discount: 0, lotBatch: "LOT-2" },
+          { productId: cleanProductId, quantity: 2, unitPrice: 10, discount: 0, inventoryStockId: cleanInventoryStockId },
+          { productId: expiredPermitProductId, quantity: 1, unitPrice: 10, discount: 0, inventoryStockId: expiredPermitInventoryStockId },
         ],
       });
 
