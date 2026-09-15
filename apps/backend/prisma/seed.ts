@@ -579,6 +579,7 @@ const permissions: { code: string; name: string; roles: string[] }[] = [
   { code: "INVENTORY_VIEW", name: "View Inventory", roles: ALL_ROLES },
   { code: "INVENTORY_CREATE", name: "Create Inventory", roles: ["SYSTEM_ADMIN", "WAREHOUSE_DISTRIBUTION_OFFICER"] },
   { code: "INVENTORY_EDIT", name: "Edit Inventory", roles: ["SYSTEM_ADMIN", "WAREHOUSE_DISTRIBUTION_OFFICER"] },
+  { code: "INVENTORY_ADJUST", name: "Adjust Inventory Stock", roles: ["SYSTEM_ADMIN", "WAREHOUSE_DISTRIBUTION_OFFICER"] },
   { code: "INVENTORY_DELETE", name: "Delete Inventory", roles: SYSTEM_ADMIN },
   { code: "STOCK_TRANSACTION_VIEW", name: "View Stock Transactions", roles: ALL_ROLES },
   { code: "STOCK_TRANSACTION_CREATE", name: "Create Stock Transactions", roles: ["SYSTEM_ADMIN", "WAREHOUSE_DISTRIBUTION_OFFICER"] },
