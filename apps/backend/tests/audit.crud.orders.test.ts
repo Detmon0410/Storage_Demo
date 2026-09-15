@@ -108,7 +108,9 @@ describe("ImportOrder and SalesOrder CRUD audit logging", () => {
     });
     await prisma.salesOrder.deleteMany({ where: { orderNo: { in: createdSalesOrderNos } } });
     await prisma.importOrder.deleteMany({ where: { orderNo: { in: createdImportOrderNos } } });
-    await prisma.inventoryStock.deleteMany({ where: { inventoryStockId: salesInventoryStockId } });
+    await prisma.inventoryStock.deleteMany({
+      where: { productId: { in: [importProductId, salesProductId] } },
+    });
     await prisma.customerLicense.deleteMany({ where: { customerLicenseId } });
     await prisma.customer.deleteMany({ where: { customerId } });
     await prisma.product.deleteMany({ where: { productId: { in: [importProductId, salesProductId] } } });
