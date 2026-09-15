@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Authentication** - Users log in/out with hashed passwords and short-lived tokens; every existing API route requires a valid session
 - [x] **Phase 2: RBAC & Audit Logging** - 6-role permission system enforced server-side per endpoint; every create/update/delete/approve/reject/login/export is recorded in an append-only audit log
-- [ ] **Phase 3: Backend Enforcement & Lot/Batch Stock Control** - License, stock, credit, and discount rules are enforced server-side; InventoryStock lots become the sole source of truth for quantity
+- [x] **Phase 3: Backend Enforcement & Lot/Batch Stock Control** - License, stock, credit, and discount rules are enforced server-side; InventoryStock lots become the sole source of truth for quantity
 - [ ] **Phase 4: Approval Workflow** - Orders move through a real DRAFT/PENDING_APPROVAL/APPROVED/REJECTED/CANCELLED status machine, self-approval is blocked, and stock deducts only on approval
 - [ ] **Phase 5: Liquor Tax & Compliance Data** - Products and import orders capture HS code, excise, ABV, landed cost inputs, and permit/document references; incomplete products are flagged
 - [ ] **Phase 6: Documents & Reporting** - Users generate invoices, delivery notes, picking lists, and reports; dashboard KPIs compute from live data
@@ -87,16 +87,16 @@ Plans:
 **Plans**: 10 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Schema migration (lot FKs, requiresApproval, updatedById) + db push [BLOCKING] + rounding utility
-- [ ] 03-02-PLAN.md — Lot-quantity guard, credit/discount guard, stockTransaction extended to InventoryStock
-- [ ] 03-03-PLAN.md — Audited stock-adjustment endpoint (D-06), manual quantityOnHand edit blocked
-- [ ] 03-04-PLAN.md — Sales order model + controller enforcement wiring (lot/credit/discount/ENFORCE-05/06)
-- [ ] 03-05-PLAN.md — Import order RECEIVED-gated lot creation, RECEIVED item-edit lock
-- [ ] 03-06-PLAN.md — Frontend Sales Orders payload migration to inventoryStockId
-- [ ] 03-07-PLAN.md — Sales order enforcement test suite
-- [ ] 03-08-PLAN.md — Import order receiving test suite
-- [ ] 03-09-PLAN.md — Pre-existing test migration sweep (lotBatch -> inventoryStockId)
-- [ ] 03-10-PLAN.md — Seed data migration + full backend suite verification [BLOCKING]
+- [x] 03-01-PLAN.md — Schema migration (lot FKs, requiresApproval, updatedById) + db push [BLOCKING] + rounding utility
+- [x] 03-02-PLAN.md — Lot-quantity guard, credit/discount guard, stockTransaction extended to InventoryStock
+- [x] 03-03-PLAN.md — Audited stock-adjustment endpoint (D-06), manual quantityOnHand edit blocked
+- [x] 03-04-PLAN.md — Sales order model + controller enforcement wiring (lot/credit/discount/ENFORCE-05/06)
+- [x] 03-05-PLAN.md — Import order RECEIVED-gated lot creation, RECEIVED item-edit lock
+- [x] 03-06-PLAN.md — Frontend Sales Orders payload migration to inventoryStockId
+- [x] 03-07-PLAN.md — Sales order enforcement test suite
+- [x] 03-08-PLAN.md — Import order receiving test suite
+- [x] 03-09-PLAN.md — Pre-existing test migration sweep (lotBatch -> inventoryStockId; no-op, already resolved by 03-04)
+- [x] 03-10-PLAN.md — Seed data migration + full backend suite verification [BLOCKING]
 
 ### Phase 4: Approval Workflow
 **Goal**: Orders that require sign-off go through a real, tamper-resistant approval process before affecting stock
