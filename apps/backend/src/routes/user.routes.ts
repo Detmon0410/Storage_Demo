@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { assignUserRoles, createUser, deactivateUser, getUser, listUsers, reactivateUser, updateUser } from "../controllers/user.controller.js";
+import { assignUserRoles, createUser, deactivateUser, getUser, listUsers, reactivateUser, resetUserPassword, updateUser } from "../controllers/user.controller.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requirePermission } from "../middleware/permission.js";
 
@@ -12,3 +12,4 @@ userRoutes.put("/:id", requireAuth, requirePermission("USER_MANAGEMENT_FULL"), u
 userRoutes.post("/:id/deactivate", requireAuth, requirePermission("USER_MANAGEMENT_FULL"), deactivateUser);
 userRoutes.post("/:id/reactivate", requireAuth, requirePermission("USER_MANAGEMENT_FULL"), reactivateUser);
 userRoutes.put("/:id/roles", requireAuth, requirePermission("USER_MANAGEMENT_FULL"), assignUserRoles);
+userRoutes.put("/:id/password", requireAuth, requirePermission("USER_MANAGEMENT_FULL"), resetUserPassword);

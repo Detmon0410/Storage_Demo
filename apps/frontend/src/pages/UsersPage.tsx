@@ -1,4 +1,4 @@
-import { Ban, Pencil, Plus, RotateCcw } from "lucide-react";
+import { Ban, KeyRound, Pencil, Plus, RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ApiError } from "../api/client";
@@ -60,6 +60,8 @@ export function UsersPage() {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<User | null | undefined>(undefined);
   const [deactivating, setDeactivating] = useState<User | null>(null);
+  const [resetting, setResetting] = useState<User | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
   const [form, setForm] = useState<FormState>(emptyForm);
 
   const load = async () => {
@@ -158,6 +160,29 @@ export function UsersPage() {
     }
   };
 
+  const openResetPassword = (row: User) => {
+    setResetPassword("");
+    setResetting(row);
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetting) return;
+    if (resetPassword.length < 8) {
+      toast.error(t("user.toastPasswordTooShort"));
+      return;
+    }
+    setSaving(true);
+    try {
+      await userApi.resetPassword(resetting.id, resetPassword);
+      toast.success(t("user.toast.passwordReset", { username: resetting.username }));
+      setResetting(null);
+    } catch (err) {
+      showGuardOrSaveFailed(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleReactivate = async (row: User) => {
     try {
       await userApi.reactivate(row.id);
@@ -200,6 +225,13 @@ export function UsersPage() {
             onClick={() => openEdit(r)}
             icon={<Pencil className="h-3.5 w-3.5" />}
             aria-label={`${t("common.edit")} ${r.username}`}
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => openResetPassword(r)}
+            icon={<KeyRound className="h-3.5 w-3.5" />}
+            aria-label={`${t("user.resetPassword")} ${r.username}`}
           />
           {r.status === "ACTIVE" ? (
             <Button
@@ -295,6 +327,30 @@ export function UsersPage() {
               </div>
               <span className="mt-1 block text-xs text-slate-400">{t("user.field.rolesHelp")}</span>
             </div>
+          </FormGrid>
+        </Modal>
+      )}
+
+      {resetting && (
+        <Modal
+          title={t("user.resetPasswordTitle", { username: resetting.username })}
+          subtitle={t("user.resetPasswordSubtitle")}
+          onClose={() => setResetting(null)}
+          footer={
+            <>
+              <Button variant="secondary" size="sm" onClick={() => setResetting(null)}>
+                {t("common.cancel")}
+              </Button>
+              <Button variant="primary" size="sm" loading={saving} onClick={handleResetPassword}>
+                {t("user.resetPasswordSubmit")}
+              </Button>
+            </>
+          }
+        >
+          <FormGrid>
+            <Field label={t("user.field.password")} required helperText={t("user.field.passwordHelp")}>
+              <TextInput type="password" value={resetPassword} onChange={(e) => setResetPassword(e.target.value)} />
+            </Field>
           </FormGrid>
         </Modal>
       )}

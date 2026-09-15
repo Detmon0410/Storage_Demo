@@ -30,6 +30,9 @@ export const UserModel = {
   reactivate: (id: number, client: Client = prisma) =>
     client.user.update({ where: { id }, data: { status: "ACTIVE" } }),
 
+  resetPassword: (id: number, passwordHash: string, client: Client = prisma) =>
+    client.user.update({ where: { id }, data: { passwordHash } }),
+
   assignRoles: async (id: number, roleCodes: string[], client: Client = prisma) => {
     const currentRoles = await client.userRole.findMany({ where: { userId: id }, include: { role: true } });
     const hadAdmin = currentRoles.some((ur) => ur.role.roleCode === "SYSTEM_ADMIN");

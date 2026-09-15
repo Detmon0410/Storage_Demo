@@ -33,6 +33,10 @@ const assignRolesSchema = z.object({
   roleCodes: roleCodesSchema,
 });
 
+const resetPasswordSchema = z.object({
+  password: z.string().min(8, "password must be at least 8 characters"),
+});
+
 type UserWithRoles = {
   id: number;
   username: string;
@@ -150,6 +154,29 @@ export const reactivateUser = asyncHandler(async (req: AuthenticatedRequest, res
   });
 
   res.json(shapeUser(result));
+});
+
+export const resetUserPassword = asyncHandler(async (req: AuthenticatedRequest, res) => {
+  const parsed = resetPasswordSchema.safeParse(req.body);
+  if (!parsed.success) throw new HttpError(400, parsed.error.issues[0]?.message ?? "Invalid request body");
+  const id = Number(req.params.id);
+
+  await prisma.$transaction(async (tx) => {
+    const before = await tx.user.findUnique({ where: { id } });
+    if (!before) throw new HttpError(404, "User not found");
+    const passwordHash = await argon2.hash(parsed.data.password);
+    await UserModel.resetPassword(id, passwordHash, tx);
+    await AuditLogModel.record(tx, {
+      entity: "User",
+      entityId: id,
+      action: "update",
+      userId: req.userId ?? null,
+      before: { username: before.username, passwordChanged: false },
+      after: { username: before.username, passwordChanged: true },
+    });
+  });
+
+  res.status(204).end();
 });
 
 export const assignUserRoles = asyncHandler(async (req: AuthenticatedRequest, res) => {

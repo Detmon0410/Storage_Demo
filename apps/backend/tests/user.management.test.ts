@@ -1,5 +1,5 @@
 import request from "supertest";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { app } from "../src/app.js";
 import { UserModel } from "../src/models/user.model.js";
 import { cleanupTestUsers, prisma } from "./setup.js";
@@ -86,10 +86,16 @@ describe("UserModel management", () => {
 describe("User management HTTP routes", () => {
   afterAll(cleanupTestUsers);
 
-  it("SYSTEM_ADMIN can create -> assign roles -> deactivate -> reactivate a user end-to-end", async () => {
-    const { username: adminUsername, password: adminPassword } = await createTestUserWithRoles("http_admin", ["SYSTEM_ADMIN"]);
-    const adminToken = await loginAs(adminUsername, adminPassword);
+  // Shared across every test below to keep total /api/auth/login calls in this file under the
+  // 10-per-window rate limit (each test previously created + logged in its own admin, which
+  // adds up fast once combined with the it.each non-admin-denial logins further down).
+  let adminToken: string;
+  beforeAll(async () => {
+    const { username: adminUsername, password: adminPassword } = await createTestUserWithRoles("http_shared_admin", ["SYSTEM_ADMIN"]);
+    adminToken = await loginAs(adminUsername, adminPassword);
+  });
 
+  it("SYSTEM_ADMIN can create -> assign roles -> deactivate -> reactivate a user end-to-end", async () => {
     const newUsername = `test_http_created_${Date.now()}`;
     const createRes = await request(app)
       .post("/api/users")
@@ -120,8 +126,6 @@ describe("User management HTTP routes", () => {
   });
 
   it("listUsers response includes role codes for each user, not just id/username/status", async () => {
-    const { username: adminUsername, password: adminPassword } = await createTestUserWithRoles("http_list_admin", ["SYSTEM_ADMIN"]);
-    const adminToken = await loginAs(adminUsername, adminPassword);
     await createTestUserWithRoles("http_list_target", ["SALES_OFFICER"]);
 
     const res = await request(app).get("/api/users").set("Authorization", `Bearer ${adminToken}`);
@@ -130,10 +134,30 @@ describe("User management HTTP routes", () => {
     expect(target?.roles).toEqual(["SALES_OFFICER"]);
   });
 
-  it("rejects createUser roleCodes containing an unknown role code with 400", async () => {
-    const { username: adminUsername, password: adminPassword } = await createTestUserWithRoles("http_badrole_admin", ["SYSTEM_ADMIN"]);
-    const adminToken = await loginAs(adminUsername, adminPassword);
+  it("SYSTEM_ADMIN can reset a user's password and the user can log in with the new password", async () => {
+    const { user, username: targetUsername } = await createTestUserWithRoles("http_pwreset_target", ["SALES_OFFICER"]);
 
+    const resetRes = await request(app)
+      .put(`/api/users/${user.id}/password`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ password: "BrandNewPass123" });
+    expect(resetRes.status).toBe(204);
+
+    const newToken = await loginAs(targetUsername, "BrandNewPass123");
+    expect(newToken).toBeTruthy();
+  });
+
+  it("rejects password reset with a password shorter than 8 characters with 400", async () => {
+    const { user } = await createTestUserWithRoles("http_pwreset_short_target", ["SALES_OFFICER"]);
+
+    const res = await request(app)
+      .put(`/api/users/${user.id}/password`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ password: "short" });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects createUser roleCodes containing an unknown role code with 400", async () => {
     const res = await request(app)
       .post("/api/users")
       .set("Authorization", `Bearer ${adminToken}`)
@@ -149,6 +173,7 @@ describe("User management HTTP routes", () => {
     { name: "POST /api/users/:id/deactivate", method: "post" as const, path: () => "/api/users/1/deactivate", body: undefined },
     { name: "POST /api/users/:id/reactivate", method: "post" as const, path: () => "/api/users/1/reactivate", body: undefined },
     { name: "PUT /api/users/:id/roles", method: "put" as const, path: () => "/api/users/1/roles", body: { roleCodes: ["SALES_OFFICER"] } },
+    { name: "PUT /api/users/:id/password", method: "put" as const, path: () => "/api/users/1/password", body: { password: "NewPass123" } },
   ] as const;
 
   it.each(nonAdminCases)("$name is denied with 403 for a non-admin (SALES_OFFICER)", async (testCase) => {

@@ -52,6 +52,8 @@ export const userApi = {
   reactivate: (id: number) => request<User>(`/users/${id}/reactivate`, { method: "POST" }),
   assignRoles: (id: number, roleCodes: RoleCode[]) =>
     request<User>(`/users/${id}/roles`, { method: "PUT", body: JSON.stringify({ roleCodes }) }),
+  resetPassword: (id: number, password: string) =>
+    request<void>(`/users/${id}/password`, { method: "PUT", body: JSON.stringify({ password }) }),
 };
 
 export const auditLogApi = {
