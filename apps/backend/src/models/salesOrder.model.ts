@@ -5,6 +5,8 @@ import { assertProductsNotBlockedTx } from "../utils/licenseGate.js";
 import { isLicenseValid } from "./customerLicense.model.js";
 import { createStockTransactionTx, reverseAndDeleteByReferenceTx } from "./stockTransaction.model.js";
 import { salesOrderStockReference } from "../utils/stockReference.js";
+import { assertLotQuantityTx } from "../utils/lotGate.js";
+import { assertCreditAndDiscountTx } from "../utils/creditDiscountGate.js";
 
 type Client = PrismaClient | Prisma.TransactionClient;
 
@@ -20,7 +22,7 @@ export interface SalesOrderItemInput {
   unitPrice: number;
   discount: number;
   taxRate?: number;
-  lotBatch: string;
+  inventoryStockId: number;
 }
 
 const toItemRows = (items: SalesOrderItemInput[]) =>
@@ -35,7 +37,7 @@ const toItemRows = (items: SalesOrderItemInput[]) =>
       discount: item.discount,
       taxRate,
       taxAmount,
-      lotBatch: item.lotBatch,
+      inventoryStockId: item.inventoryStockId,
       netValue: discounted + taxAmount,
     };
   });
@@ -55,9 +57,19 @@ const createStockOutTx = async (tx: Prisma.TransactionClient, orderNo: string, i
       transactionType: "OUT",
       quantity: item.quantity,
       referenceNo,
+      inventoryStockId: item.inventoryStockId,
       note: `Auto-generated from sales order ${orderNo}`,
     });
   }
+};
+
+const applyLotGuardsTx = async (tx: Prisma.TransactionClient, customerId: number, items: SalesOrderItemInput[]) => {
+  // ENFORCE-02: hard reject regardless of approval outcome — a line that exceeds its lot's
+  // availability is always rejected, whether or not the order also requires approval.
+  await assertLotQuantityTx(tx, items.map((i) => ({ inventoryStockId: i.inventoryStockId, quantity: i.quantity })));
+  // ENFORCE-03/ENFORCE-04: soft-block — never throws, just tells the caller whether to defer
+  // the stock decrement and flag the order for approval.
+  return assertCreditAndDiscountTx(tx, customerId, items);
 };
 
 const validateAndSnapshotLicense = async (tx: Prisma.TransactionClient, customerId: number, customerLicenseId: number) => {
@@ -103,6 +115,7 @@ export const SalesOrderModel = {
     const run = async (tx: Client) => {
       await assertProductsNotBlockedTx(tx as Prisma.TransactionClient, data.items.map((i) => i.productId));
       const licenseFields = await validateAndSnapshotLicense(tx as Prisma.TransactionClient, data.customerId, data.customerLicenseId);
+      const { requiresApproval } = await applyLotGuardsTx(tx as Prisma.TransactionClient, data.customerId, data.items);
 
       const order = await tx.salesOrder.create({
         data: {
@@ -115,10 +128,16 @@ export const SalesOrderModel = {
           items: { create: rows },
           ...licenseFields,
           createdById: data.createdById,
+          requiresApproval,
         },
         include: withRelations,
       });
-      await createStockOutTx(tx as Prisma.TransactionClient, data.orderNo, data.items);
+      // D-05: only decrement lots immediately if the order does NOT require approval. If it does,
+      // the decrement is deferred until a Manager/Approver approves it (see
+      // salesOrder.controller.ts approveSalesOrder).
+      if (!requiresApproval) {
+        await createStockOutTx(tx as Prisma.TransactionClient, data.orderNo, data.items);
+      }
       return order;
     };
     return "$transaction" in client ? client.$transaction((tx) => run(tx)) : run(client);
@@ -134,6 +153,7 @@ export const SalesOrderModel = {
       invoiceNo: string;
       approver: string;
       items: SalesOrderItemInput[];
+      updatedById: number;
     }>,
     client: Client = prisma,
   ) => {
@@ -148,7 +168,11 @@ export const SalesOrderModel = {
           const customerId = data.customerId ?? existing.customerId;
           licenseFields = await validateAndSnapshotLicense(tx as Prisma.TransactionClient, customerId, customerLicenseId);
         }
-        return tx.salesOrder.update({ where: { salesOrderId }, data: { ...orderFields, ...licenseFields }, include: withRelations });
+        return tx.salesOrder.update({
+          where: { salesOrderId },
+          data: { ...orderFields, ...licenseFields, updatedById: data.updatedById },
+          include: withRelations,
+        });
       }
 
       const rows = toItemRows(items);
@@ -165,6 +189,9 @@ export const SalesOrderModel = {
         licenseFields = await validateAndSnapshotLicense(tx as Prisma.TransactionClient, customerId, customerLicenseId);
       }
 
+      const customerId = data.customerId ?? existing.customerId;
+      const { requiresApproval } = await applyLotGuardsTx(tx as Prisma.TransactionClient, customerId, items);
+
       const updated = await tx.salesOrder.update({
         where: { salesOrderId },
         data: {
@@ -172,12 +199,16 @@ export const SalesOrderModel = {
           ...licenseFields,
           ...orderTotals(rows),
           items: { create: rows },
+          requiresApproval,
+          updatedById: data.updatedById,
         },
         include: withRelations,
       });
 
       const orderNo = data.orderNo ?? existing.orderNo;
-      await createStockOutTx(tx as Prisma.TransactionClient, orderNo, items);
+      if (!requiresApproval) {
+        await createStockOutTx(tx as Prisma.TransactionClient, orderNo, items);
+      }
       return updated;
     };
     return "$transaction" in client ? client.$transaction((tx) => run(tx)) : run(client);
