@@ -15,6 +15,7 @@ export interface StockTransactionInput {
   transactionDate?: Date;
   referenceNo?: string;
   note?: string;
+  inventoryStockId?: number;
 }
 
 export async function createStockTransactionTx(tx: Prisma.TransactionClient, data: StockTransactionInput) {
@@ -37,6 +38,12 @@ export async function createStockTransactionTx(tx: Prisma.TransactionClient, dat
     where: { productId: data.productId },
     data: { stockQty: { increment: stockDelta(data.transactionType, data.quantity) } },
   });
+  if (data.inventoryStockId != null) {
+    await tx.inventoryStock.update({
+      where: { inventoryStockId: data.inventoryStockId },
+      data: { quantityOnHand: { increment: stockDelta(data.transactionType, data.quantity) } },
+    });
+  }
   return transaction;
 }
 
@@ -47,6 +54,12 @@ export async function reverseAndDeleteByReferenceTx(tx: Prisma.TransactionClient
       where: { productId: transaction.productId },
       data: { stockQty: { increment: -stockDelta(transaction.transactionType, transaction.quantity) } },
     });
+    if (transaction.inventoryStockId != null) {
+      await tx.inventoryStock.update({
+        where: { inventoryStockId: transaction.inventoryStockId },
+        data: { quantityOnHand: { increment: -stockDelta(transaction.transactionType, transaction.quantity) } },
+      });
+    }
   }
   await tx.stockTransaction.deleteMany({ where: { referenceNo } });
 }
