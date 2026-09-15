@@ -19,6 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 5: Liquor Tax & Compliance Data** - Products and import orders capture HS code, excise, ABV, landed cost inputs, and permit/document references; incomplete products are flagged
 - [ ] **Phase 6: Documents & Reporting** - Users generate invoices, delivery notes, picking lists, and reports; dashboard KPIs compute from live data
 - [x] **Phase 7: Company Profile & Permit Deadlines** - A single Company profile backs the system's licenses and documents; permits auto-status on a 120/90/60/30-day notification schedule and block product transactions when expired
+- [ ] **Phase 9: License/Permit Model Parity** - `License` gains a real lifecycle status (Active/Preparing Renewal/Renewing/Expired/Suspended), governing authority, attachments, audit trail, and renewal chain, matching `CustomerLicense`; Compliance Staff gate the status; Suspended blocks orders like Expired
 
 ## Phase Details
 
@@ -83,7 +84,19 @@ Plans:
   3. Creating a sales order decrements the selected lot's quantity within the same transaction, and deleting or editing an order correctly restores the prior lot quantity before applying the new one
   4. Import receiving creates or updates inventory lots with received quantity, warehouse, received date, and lot/batch number, and every stock transaction records product, lot, source document, and movement type
   5. A sales order exceeding the customer's credit limit or an unapproved discount limit is rejected unless routed to approval, invalid data (negative quantities, invalid prices/discounts/status transitions) produces a clear error, a user cannot approve a transaction they created or last edited, and manual stock quantity edits are blocked except through an audited stock-adjustment transaction with a reason code
-**Plans**: TBD
+**Plans**: 10 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Schema migration (lot FKs, requiresApproval, updatedById) + db push [BLOCKING] + rounding utility
+- [ ] 03-02-PLAN.md — Lot-quantity guard, credit/discount guard, stockTransaction extended to InventoryStock
+- [ ] 03-03-PLAN.md — Audited stock-adjustment endpoint (D-06), manual quantityOnHand edit blocked
+- [ ] 03-04-PLAN.md — Sales order model + controller enforcement wiring (lot/credit/discount/ENFORCE-05/06)
+- [ ] 03-05-PLAN.md — Import order RECEIVED-gated lot creation, RECEIVED item-edit lock
+- [ ] 03-06-PLAN.md — Frontend Sales Orders payload migration to inventoryStockId
+- [ ] 03-07-PLAN.md — Sales order enforcement test suite
+- [ ] 03-08-PLAN.md — Import order receiving test suite
+- [ ] 03-09-PLAN.md — Pre-existing test migration sweep (lotBatch -> inventoryStockId)
+- [ ] 03-10-PLAN.md — Seed data migration + full backend suite verification [BLOCKING]
 
 ### Phase 4: Approval Workflow
 **Goal**: Orders that require sign-off go through a real, tamper-resistant approval process before affecting stock
@@ -143,17 +156,30 @@ Plans:
 - [ ] 07-07-PLAN.md — Dashboard 5-bucket permit grouping (checkpoint)
 - [ ] 07-08-PLAN.md — Order-blocking UI, sales + import orders (checkpoint)
 
+### Phase 9: License/Permit Model Parity
+**Goal**: `License` (import/company-side) carries the same lifecycle richness as `CustomerLicense`, closing the PDF §6 gap Phase 7 left open
+**Depends on**: Phase 2 (RBAC, for Compliance Staff permission gate), Phase 7 (Company/Product linking on `License`)
+**Requirements**: LICENSE-01, LICENSE-02, LICENSE-03, LICENSE-04, LICENSE-05, LICENSE-06
+**Success Criteria** (what must be TRUE):
+  1. A `License` record can hold a status of ACTIVE, PREPARING_RENEWAL, RENEWING, EXPIRED, or SUSPENDED, independent of the computed day-count notification bucket
+  2. A `License` record can store governing authority, a document attachment, notes, and full audit fields (created/updated by/at, status-changed by/at)
+  3. A `License` can reference the prior license it renewed from, forming a renewal chain, same as `CustomerLicense`
+  4. Only a user with Compliance Staff permission can change a `License.status`; any other role is rejected by the backend
+  5. A new import or sales order for a product/company linked to a SUSPENDED license is blocked, same as an EXPIRED one
+**Plans**: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 9
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Authentication | 9/9 | Complete | 2026-09-03 |
 | 2. RBAC & Audit Logging | 0/14 | Not started | - |
-| 3. Backend Enforcement & Lot/Batch Stock Control | 0/TBD | Not started | - |
+| 3. Backend Enforcement & Lot/Batch Stock Control | 0/10 | Not started | - |
 | 4. Approval Workflow | 0/TBD | Not started | - |
 | 5. Liquor Tax & Compliance Data | 0/TBD | Not started | - |
 | 6. Documents & Reporting | 0/TBD | Not started | - |
 | 7. Company Profile & Permit Deadlines | 0/8 | Not started | - |
+| 9. License/Permit Model Parity | 0/TBD | Not started | - |
