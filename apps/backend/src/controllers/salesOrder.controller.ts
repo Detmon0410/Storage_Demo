@@ -34,7 +34,7 @@ const parseItems = (value: unknown): SalesOrderItemInput[] => {
   });
 };
 
-const DELIVERY_STATUS_VALUES = ["PENDING", "SHIPPING", "DELIVERED", "RETURNED", "DAMAGED", "APPROVED", "REJECTED"];
+const DELIVERY_STATUS_VALUES = ["PENDING", "SHIPPING", "DELIVERED", "RETURNED", "DAMAGED"];
 const DELIVERY_PIPELINE: Record<string, number> = { PENDING: 0, SHIPPING: 1, DELIVERED: 2 };
 const POST_DELIVERY_STATES = new Set(["DELIVERED", "RETURNED", "DAMAGED"]);
 
@@ -43,9 +43,6 @@ const assertValidDeliveryStatusTransition = (newStatus: string, currentStatus?: 
     throw new HttpError(400, `invalid deliveryStatus "${newStatus}"; must be one of ${DELIVERY_STATUS_VALUES.join(", ")}`);
   }
   if (currentStatus == null || currentStatus === newStatus) return;
-  if (currentStatus === "APPROVED" || currentStatus === "REJECTED") {
-    throw new HttpError(400, `invalid status transition: cannot change deliveryStatus from terminal state "${currentStatus}"`);
-  }
   if ((newStatus === "RETURNED" || newStatus === "DAMAGED") && !POST_DELIVERY_STATES.has(currentStatus)) {
     throw new HttpError(400, `invalid status transition: "${newStatus}" requires the order to already be DELIVERED`);
   }
@@ -53,6 +50,21 @@ const assertValidDeliveryStatusTransition = (newStatus: string, currentStatus?: 
   const toIndex = DELIVERY_PIPELINE[newStatus];
   if (fromIndex != null && toIndex != null && toIndex < fromIndex) {
     throw new HttpError(400, `invalid status transition from "${currentStatus}" to "${newStatus}"`);
+  }
+};
+
+// APPROVAL-01: the real 5-value approval machine, fully independent of deliveryStatus above.
+// D-06: CANCELLED is only reachable from DRAFT or PENDING_APPROVAL.
+const ORDER_STATUS_VALUES = ["DRAFT", "PENDING_APPROVAL", "APPROVED", "REJECTED", "CANCELLED"];
+const assertValidOrderStatusTransition = (newStatus: string, currentStatus?: string) => {
+  if (!ORDER_STATUS_VALUES.includes(newStatus)) {
+    throw new HttpError(400, `invalid status "${newStatus}"; must be one of ${ORDER_STATUS_VALUES.join(", ")}`);
+  }
+  if (currentStatus === "APPROVED" || currentStatus === "REJECTED" || currentStatus === "CANCELLED") {
+    throw new HttpError(400, `invalid status transition: cannot change status from terminal state "${currentStatus}"`);
+  }
+  if (newStatus === "CANCELLED" && !["DRAFT", "PENDING_APPROVAL"].includes(currentStatus ?? "DRAFT")) {
+    throw new HttpError(400, "CANCELLED is only reachable from DRAFT or PENDING_APPROVAL");
   }
 };
 
@@ -67,15 +79,15 @@ export const getSalesOrder = asyncHandler(async (req, res) => {
 });
 
 export const createSalesOrder = asyncHandler(async (req: AuthenticatedRequest, res) => {
-  const { orderNo, customerId, customerLicenseId, deliveryStatus, invoiceNo, approver, items } = req.body;
+  const { orderNo, customerId, customerLicenseId, deliveryStatus, invoiceNo, status, items } = req.body;
   if (!orderNo || !customerId || !deliveryStatus || !invoiceNo) {
     throw new HttpError(400, "orderNo, customerId, deliveryStatus, and invoiceNo are required");
   }
   if (!customerLicenseId) {
     throw new HttpError(400, "A valid customer license must be selected");
   }
-  if (deliveryStatus === "APPROVED" || deliveryStatus === "REJECTED") {
-    throw new HttpError(400, "Use the dedicated approve/reject endpoint to change status to APPROVED or REJECTED");
+  if (status != null) {
+    throw new HttpError(400, "status is server-derived from credit/discount thresholds; use the dedicated approve/reject endpoint instead");
   }
   assertValidDeliveryStatusTransition(deliveryStatus);
   const order = await prisma.$transaction(async (tx) => {
@@ -86,7 +98,6 @@ export const createSalesOrder = asyncHandler(async (req: AuthenticatedRequest, r
         customerLicenseId: Number(customerLicenseId),
         deliveryStatus,
         invoiceNo,
-        approver,
         items: parseItems(items),
         createdById: req.userId,
       },
@@ -106,10 +117,10 @@ export const createSalesOrder = asyncHandler(async (req: AuthenticatedRequest, r
 });
 
 export const updateSalesOrder = asyncHandler(async (req: AuthenticatedRequest, res) => {
-  const { orderNo, customerId, customerLicenseId, deliveryStatus, invoiceNo, approver, items } = req.body;
+  const { orderNo, customerId, customerLicenseId, deliveryStatus, invoiceNo, status, items } = req.body;
 
-  if (deliveryStatus === "APPROVED" || deliveryStatus === "REJECTED") {
-    throw new HttpError(400, "Use the dedicated approve/reject endpoint to change status to APPROVED or REJECTED");
+  if (status != null) {
+    throw new HttpError(400, "status is server-derived from credit/discount thresholds; use the dedicated approve/reject endpoint instead");
   }
 
   const salesOrderId = Number(req.params.id);
@@ -129,7 +140,6 @@ export const updateSalesOrder = asyncHandler(async (req: AuthenticatedRequest, r
         customerLicenseId: customerLicenseId == null ? undefined : Number(customerLicenseId),
         deliveryStatus,
         invoiceNo,
-        approver,
         items: items == null ? undefined : parseItems(items),
         updatedById: req.userId,
       },
@@ -178,7 +188,7 @@ export const approveSalesOrder = asyncHandler(async (req: AuthenticatedRequest, 
     if (existing.updatedById != null && existing.updatedById === req.userId) {
       throw new HttpError(403, "You cannot approve an order you last edited");
     }
-    if (existing.requiresApproval) {
+    if (existing.status === "PENDING_APPROVAL") {
       const items = await tx.salesOrderItem.findMany({ where: { salesOrderId } });
       await assertLotQuantityTx(tx, items.map((i) => ({ inventoryStockId: i.inventoryStockId, quantity: i.quantity })));
       const referenceNo = salesOrderStockReference(existing.orderNo);
@@ -194,10 +204,9 @@ export const approveSalesOrder = asyncHandler(async (req: AuthenticatedRequest, 
         });
       }
     }
-    const approverUser = await tx.user.findUnique({ where: { id: req.userId! }, select: { username: true } });
     const updated = await tx.salesOrder.update({
       where: { salesOrderId },
-      data: { deliveryStatus: "APPROVED", approver: approverUser?.username ?? null, requiresApproval: false },
+      data: { status: "APPROVED", approvedById: req.userId, approvedAt: new Date() },
     });
     await AuditLogModel.record(tx, {
       entity: "SalesOrder",
@@ -223,10 +232,14 @@ export const rejectSalesOrder = asyncHandler(async (req: AuthenticatedRequest, r
     if (existing.updatedById != null && existing.updatedById === req.userId) {
       throw new HttpError(403, "You cannot reject an order you last edited");
     }
-    const approverUser = await tx.user.findUnique({ where: { id: req.userId! }, select: { username: true } });
     const updated = await tx.salesOrder.update({
       where: { salesOrderId },
-      data: { deliveryStatus: "REJECTED", approver: approverUser?.username ?? null },
+      data: {
+        status: "REJECTED",
+        approvedById: req.userId,
+        approvedAt: new Date(),
+        rejectionReason: req.body?.reason ?? null,
+      },
     });
     await AuditLogModel.record(tx, {
       entity: "SalesOrder",
@@ -234,7 +247,7 @@ export const rejectSalesOrder = asyncHandler(async (req: AuthenticatedRequest, r
       action: "reject",
       userId: req.userId ?? null,
       before: existing,
-      after: { ...updated, rejectionReason: req.body?.reason ?? null },
+      after: updated,
     });
     return updated;
   });
