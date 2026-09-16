@@ -108,7 +108,16 @@ Plans:
   3. Approving or rejecting an order records the approver, timestamp, decision, and a reason when rejected
   4. An order that exceeds the customer's credit limit or discount limit threshold is automatically routed to PENDING_APPROVAL before it can proceed
   5. A user holding Manager/Approver permission can approve or reject a pending order; a user without that permission is rejected by the backend if they attempt it
-**Plans**: TBD
+**Plans**: 7 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — OrderStatus enum + schema field split, db push [BLOCKING], import-value threshold guard
+- [ ] 04-02-PLAN.md — Model rewiring: status-derived stock decrement, dual RECEIVED+APPROVED gate
+- [ ] 04-03-PLAN.md — Controller rewiring: transition-validator split, approve/reject column persistence
+- [ ] 04-04-PLAN.md — Seed data migration to logisticsStatus/status split + reseed [BLOCKING]
+- [ ] 04-05-PLAN.md — Existing test suite sweep (field-rename fixes across 5 files)
+- [ ] 04-06-PLAN.md — Frontend field-split adjustments (approver removal, logisticsStatus rename)
+- [ ] 04-07-PLAN.md — Full backend suite + regression grep verification [BLOCKING]
 
 ### Phase 5: Liquor Tax & Compliance Data
 **Goal**: Products and import orders carry the regulatory and cost data required for lawful liquor trading
@@ -178,7 +187,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 9
 | 1. Authentication | 9/9 | Complete | 2026-09-03 |
 | 2. RBAC & Audit Logging | 0/14 | Not started | - |
 | 3. Backend Enforcement & Lot/Batch Stock Control | 0/10 | Not started | - |
-| 4. Approval Workflow | 0/TBD | Not started | - |
+| 4. Approval Workflow | 0/7 | Not started | - |
 | 5. Liquor Tax & Compliance Data | 0/TBD | Not started | - |
 | 6. Documents & Reporting | 0/TBD | Not started | - |
 | 7. Company Profile & Permit Deadlines | 0/8 | Not started | - |
