@@ -27,7 +27,6 @@ type FormState = {
   customerLicenseId: string;
   deliveryStatus: string;
   invoiceNo: string;
-  approver: string;
   items: ItemRow[];
 };
 
@@ -37,7 +36,6 @@ const emptyForm: FormState = {
   customerLicenseId: "",
   deliveryStatus: "PENDING",
   invoiceNo: "",
-  approver: "",
   items: [],
 };
 
@@ -150,9 +148,8 @@ export function SalesOrdersPage() {
       }
     }
 
-    const needsApproval = warnings.length > 0 && !form.approver.trim();
-    return { blockers, warnings, needsApproval };
-  }, [quantityByProduct, products, selectedCustomer, validLicensesForCustomer, form.customerLicenseId, form.items, form.approver, orderTotal, licenses, t]);
+    return { blockers, warnings, needsApproval: false };
+  }, [quantityByProduct, products, selectedCustomer, validLicensesForCustomer, form.customerLicenseId, form.items, orderTotal, licenses, t]);
 
   const canSubmit = validation.blockers.length === 0 && !validation.needsApproval;
 
@@ -168,7 +165,6 @@ export function SalesOrdersPage() {
       customerLicenseId: row.customerLicenseId != null ? String(row.customerLicenseId) : "",
       deliveryStatus: row.deliveryStatus,
       invoiceNo: row.invoiceNo,
-      approver: row.approver ?? "",
       items: (row.items ?? []).map((item) => ({
         productId: String(item.productId),
         quantity: String(item.quantity),
@@ -208,7 +204,6 @@ export function SalesOrdersPage() {
         customerLicenseId: Number(form.customerLicenseId),
         deliveryStatus: form.deliveryStatus,
         invoiceNo: form.invoiceNo,
-        approver: form.approver || undefined,
         items: form.items.map((item) => ({
           productId: Number(item.productId),
           quantity: Number(item.quantity),
@@ -274,6 +269,18 @@ export function SalesOrdersPage() {
       key: "delivery",
       header: t("salesOrder.col.delivery"),
       render: (r) => <Badge tone={statusTone(r.deliveryStatus)}>{t(`status.delivery.${r.deliveryStatus}`, r.deliveryStatus)}</Badge>,
+    },
+    {
+      key: "approvalStatus",
+      header: t("salesOrder.col.approvalStatus"),
+      render: (r) => (
+        <div className="flex flex-col gap-0.5">
+          <Badge tone={statusTone(r.status)}>{t(`status.orderApproval.${r.status}`, r.status)}</Badge>
+          {r.status === "REJECTED" && r.rejectionReason && (
+            <span className="text-xs text-rose-500">{r.rejectionReason}</span>
+          )}
+        </div>
+      ),
     },
     {
       key: "actions",
@@ -421,9 +428,6 @@ export function SalesOrdersPage() {
                     </option>
                   ))}
                 </SelectField>
-              </Field>
-              <Field label={t("salesOrder.field.approver")} helperText={t("salesOrder.field.approverHelp")}>
-                <TextInput value={form.approver} onChange={(e) => setForm({ ...form, approver: e.target.value })} />
               </Field>
             </FormGrid>
 

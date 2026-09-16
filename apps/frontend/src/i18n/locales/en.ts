@@ -103,6 +103,13 @@ export const en = {
     channel: { DISTRIBUTOR: "Distributor", RETAIL_WHOLESALE: "Retail / Wholesale", RESTAURANT_BAR: "Restaurant / Bar", ONLINE: "Online" },
     credit: { NORMAL: "Normal", NEAR_LIMIT: "Near Limit", OVER_LIMIT: "Over Limit", NO_LICENSE: "No License" },
     delivery: { PENDING: "Pending Shipment", SHIPPING: "Shipping", DELIVERED: "Delivered", RETURNED: "Returned", DAMAGED: "Damaged" },
+    orderApproval: {
+      DRAFT: "Draft",
+      PENDING_APPROVAL: "Pending Approval",
+      APPROVED: "Approved",
+      REJECTED: "Rejected",
+      CANCELLED: "Cancelled",
+    },
     inventory: { NORMAL: "Normal", AGING_SOON: "Aging Soon", AGING: "Aging" },
     transaction: { IN: "Received (IN)", OUT: "Issued (OUT)", ADJUSTMENT: "Adjustment" },
     customerLicense: { ACTIVE: "Active", EXPIRED: "Expired", REVOKED: "Revoked", SUSPENDED: "Suspended", PENDING: "Pending" },
@@ -332,7 +339,7 @@ export const en = {
     modalCreate: "Create New Import Order",
     modalEdit: "Edit Import Order",
     modalSubtitle: "FR-03: every new order must pass through Staging before it enters the warehouse",
-    col: { items: "Line Items (multiple varieties from one supplier)", incoterms: "Incoterms", orderDate: "Order Date", eta: "ETA", value: "Total Value (incl. tax)", approver: "Approver" },
+    col: { items: "Line Items (multiple varieties from one supplier)", incoterms: "Incoterms", orderDate: "Order Date", eta: "ETA", value: "Total Value (incl. tax)", approvalStatus: "Approval Status" },
     viewItemsTitle: 'Line Items — "{{no}}"',
     field: {
       orderNo: "Order No.",
@@ -344,9 +351,7 @@ export const en = {
       incoterms: "Incoterms",
       orderDate: "Order Date",
       etaDate: "Estimated Arrival (ETA)",
-      status: "Status",
-      approver: "Approver",
-      approverHelp: "Fill in once this order has been approved",
+      logisticsStatus: "Logistics Status",
       customsEntryNo: "Customs Entry No.",
     },
     items: {
@@ -500,7 +505,7 @@ export const en = {
     modalCreate: "Create New Sales Order",
     modalEdit: "Edit Sales Order",
     modalSubtitle: "Stock, credit and licenses are checked automatically before saving — add as many line items as needed",
-    col: { items: "Products (multiple items per order)", invoice: "Invoice No.", delivery: "Delivery Status" },
+    col: { items: "Products (multiple items per order)", invoice: "Invoice No.", delivery: "Delivery Status", approvalStatus: "Approval Status" },
     field: {
       orderNo: "Order No.",
       orderNoPlaceholder: "e.g. SO-2026-3310",
@@ -517,8 +522,6 @@ export const en = {
       licenseValidUntil: "Valid Until",
       licenseValid: "Valid",
       deliveryStatus: "Delivery Status",
-      approver: "Approver (Supervisor)",
-      approverHelp: "Fill in when requesting approval for discount / credit overrides",
       availableCredit: "Customer's available credit",
     },
     items: {

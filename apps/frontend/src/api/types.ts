@@ -72,6 +72,8 @@ export interface ImportOrderItem {
   importOrder?: ImportOrder;
 }
 
+export type OrderStatus = "DRAFT" | "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "CANCELLED";
+
 export interface ImportOrder {
   importOrderId: number;
   orderNo: string;
@@ -83,8 +85,11 @@ export interface ImportOrder {
   skuItemCount: number;
   totalValue: string;
   taxTotal: string;
-  status: string;
-  approver: string | null;
+  logisticsStatus: string;
+  status: OrderStatus;
+  approvedById: number | null;
+  approvedAt: string | null;
+  rejectionReason: string | null;
   customsEntryNo: string | null;
   supplier?: Supplier;
   items?: ImportOrderItem[];
@@ -164,7 +169,10 @@ export interface SalesOrder {
   taxTotal: string;
   deliveryStatus: string;
   invoiceNo: string;
-  approver: string | null;
+  status: OrderStatus;
+  approvedById: number | null;
+  approvedAt: string | null;
+  rejectionReason: string | null;
   customerLicenseId: number | null;
   licenseNumberSnapshot: string | null;
   licenseTypeSnapshot: string | null;

@@ -27,8 +27,7 @@ type FormState = {
   incoterms: string;
   orderDate: string;
   etaDate: string;
-  status: string;
-  approver: string;
+  logisticsStatus: string;
   customsEntryNo: string;
   items: ItemRow[];
 };
@@ -40,13 +39,12 @@ const emptyForm: FormState = {
   incoterms: "CIF",
   orderDate: "",
   etaDate: "",
-  status: "STAGING",
-  approver: "",
+  logisticsStatus: "STAGING",
   customsEntryNo: "",
   items: [],
 };
 
-const STATUS_OPTIONS = ["STAGING", "PENDING_APPROVAL", "APPROVED", "CUSTOMS_CLEARED", "RECEIVED", "ISSUE"];
+const LOGISTICS_STATUS_OPTIONS = ["STAGING", "CUSTOMS_CLEARED", "RECEIVED", "ISSUE"];
 
 export function ImportOrdersPage() {
   const { t } = useTranslation();
@@ -70,7 +68,7 @@ export function ImportOrdersPage() {
     return rows.filter((r) => {
       const matchesQuery =
         !q || r.orderNo.toLowerCase().includes(q) || (r.supplier?.supplierName ?? "").toLowerCase().includes(q);
-      const matchesStatus = !statusFilter || r.status === statusFilter;
+      const matchesStatus = !statusFilter || r.logisticsStatus === statusFilter;
       return matchesQuery && matchesStatus;
     });
   }, [rows, search, statusFilter]);
@@ -111,8 +109,7 @@ export function ImportOrdersPage() {
       incoterms: row.incoterms,
       orderDate: toDateInputValue(row.orderDate),
       etaDate: toDateInputValue(row.etaDate),
-      status: row.status,
-      approver: row.approver ?? "",
+      logisticsStatus: row.logisticsStatus,
       customsEntryNo: row.customsEntryNo ?? "",
       items: (row.items ?? []).map((item) => ({
         productId: String(item.productId),
@@ -158,8 +155,7 @@ export function ImportOrdersPage() {
         incoterms: form.incoterms,
         orderDate: form.orderDate,
         etaDate: form.etaDate,
-        status: form.status,
-        approver: form.approver || undefined,
+        logisticsStatus: form.logisticsStatus,
         customsEntryNo: form.customsEntryNo || undefined,
         items: form.items.map((item) => ({
           productId: Number(item.productId),
@@ -241,16 +237,23 @@ export function ImportOrdersPage() {
       header: t("common.col.status"),
       headerClassName: "w-[13%]",
       render: (r) => (
-        <Badge tone={statusTone(r.status)} wrap>
-          {t(`status.importOrder.${r.status}`, r.status)}
+        <Badge tone={statusTone(r.logisticsStatus)} wrap>
+          {t(`status.importOrder.${r.logisticsStatus}`, r.logisticsStatus)}
         </Badge>
       ),
     },
     {
-      key: "approver",
-      header: t("importOrder.col.approver"),
+      key: "approvalStatus",
+      header: t("importOrder.col.approvalStatus"),
       headerClassName: "w-[10%]",
-      render: (r) => <span className="text-xs text-slate-500">{r.approver ?? "-"}</span>,
+      render: (r) => (
+        <div className="flex flex-col gap-0.5">
+          <Badge tone={statusTone(r.status)}>{t(`status.orderApproval.${r.status}`, r.status)}</Badge>
+          {r.status === "REJECTED" && r.rejectionReason && (
+            <span className="text-xs text-rose-500">{r.rejectionReason}</span>
+          )}
+        </div>
+      ),
     },
     {
       key: "actions",
@@ -276,7 +279,7 @@ export function ImportOrdersPage() {
             <SearchInput value={search} onChange={setSearch} placeholder={t("importOrder.searchPlaceholder")} />
             <SelectField value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-auto">
               <option value="">{t("common.allStatuses")}</option>
-              {STATUS_OPTIONS.map((s) => (
+              {LOGISTICS_STATUS_OPTIONS.map((s) => (
                 <option key={s} value={s}>
                   {t(`status.importOrder.${s}`)}
                 </option>
@@ -302,7 +305,7 @@ export function ImportOrdersPage() {
           columns={columns}
           rows={filtered}
           getRowKey={(r) => r.importOrderId}
-          rowClassName={(r) => (r.status === "ISSUE" ? "bg-rose-50/40" : "")}
+          rowClassName={(r) => (r.logisticsStatus === "ISSUE" ? "bg-rose-50/40" : "")}
           fitContainer
         />
       )}
@@ -356,17 +359,14 @@ export function ImportOrdersPage() {
               <Field label={t("importOrder.field.etaDate")} required>
                 <TextInput type="date" value={form.etaDate} onChange={(e) => setForm({ ...form, etaDate: e.target.value })} />
               </Field>
-              <Field label={t("importOrder.field.status")}>
-                <SelectField value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                  {STATUS_OPTIONS.map((s) => (
+              <Field label={t("importOrder.field.logisticsStatus")}>
+                <SelectField value={form.logisticsStatus} onChange={(e) => setForm({ ...form, logisticsStatus: e.target.value })}>
+                  {LOGISTICS_STATUS_OPTIONS.map((s) => (
                     <option key={s} value={s}>
                       {t(`status.importOrder.${s}`)}
                     </option>
                   ))}
                 </SelectField>
-              </Field>
-              <Field label={t("importOrder.field.approver")} helperText={t("importOrder.field.approverHelp")}>
-                <TextInput value={form.approver} onChange={(e) => setForm({ ...form, approver: e.target.value })} />
               </Field>
               <Field label={t("importOrder.field.customsEntryNo")} colSpan={2}>
                 <TextInput value={form.customsEntryNo} onChange={(e) => setForm({ ...form, customsEntryNo: e.target.value })} />

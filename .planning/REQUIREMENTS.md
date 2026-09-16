@@ -61,14 +61,15 @@
 
 ### Approval Workflow (APPROVAL)
 
-- [ ] **APPROVAL-01**: Import orders and sales orders support statuses DRAFT, PENDING_APPROVAL, APPROVED, REJECTED, and CANCELLED
+- [x] **APPROVAL-01
+**: Import orders and sales orders support statuses DRAFT, PENDING_APPROVAL, APPROVED, REJECTED, and CANCELLED
 - [x] **APPROVAL-02
 **: An order in a non-APPROVED state does not affect final stock or delivery
 - [x] **APPROVAL-03
 **: Stock is decremented at the point an order transitions to APPROVED, not at order creation
 - [x] **APPROVAL-04
 **: Approving or rejecting an order records the approver, timestamp, decision, and (if rejected) a reason
-- [ ] **APPROVAL-05**: Orders exceeding credit limit or discount limit thresholds automatically require approval before proceeding
+- [x] **APPROVAL-05**: Orders exceeding credit limit or discount limit thresholds automatically require approval before proceeding
 - [x] **APPROVAL-06
 **: A user with Manager/Approver permission can approve or reject a pending order; a user without that permission cannot
 
@@ -182,12 +183,12 @@ Deferred to a future milestone once v1 data models are live and validated.
 | STOCK-04 | Phase 3 | Pending |
 | STOCK-05 | Phase 3 | Pending |
 | STOCK-06 | Phase 3 | Pending |
-| APPROVAL-01 | Phase 4 | Pending |
-| APPROVAL-02 | Phase 4 | Pending |
-| APPROVAL-03 | Phase 4 | Pending |
-| APPROVAL-04 | Phase 4 | Pending |
-| APPROVAL-05 | Phase 4 | Pending |
-| APPROVAL-06 | Phase 4 | Pending |
+| APPROVAL-01 | Phase 4 | Done |
+| APPROVAL-02 | Phase 4 | Done |
+| APPROVAL-03 | Phase 4 | Done |
+| APPROVAL-04 | Phase 4 | Done |
+| APPROVAL-05 | Phase 4 | Done |
+| APPROVAL-06 | Phase 4 | Done |
 | TAX-01 | Phase 5 | Pending |
 | TAX-02 | Phase 5 | Pending |
 | TAX-03 | Phase 5 | Pending |

@@ -105,6 +105,13 @@ export const ja: TranslationSchema = {
     channel: { DISTRIBUTOR: "卸売代理店", RETAIL_WHOLESALE: "小売・卸売店", RESTAURANT_BAR: "飲食店・バー", ONLINE: "オンライン" },
     credit: { NORMAL: "正常", NEAR_LIMIT: "限度額間近", OVER_LIMIT: "限度額超過", NO_LICENSE: "許可証なし" },
     delivery: { PENDING: "出荷待ち", SHIPPING: "配送中", DELIVERED: "配送完了", RETURNED: "返品", DAMAGED: "破損" },
+    orderApproval: {
+      DRAFT: "ドラフト",
+      PENDING_APPROVAL: "承認待ち",
+      APPROVED: "承認済み",
+      REJECTED: "却下",
+      CANCELLED: "取消",
+    },
     inventory: { NORMAL: "正常", AGING_SOON: "滞留予備軍", AGING: "長期滞留" },
     transaction: { IN: "入庫", OUT: "出庫", ADJUSTMENT: "調整" },
     customerLicense: { ACTIVE: "有効", EXPIRED: "期限切れ", REVOKED: "失効", SUSPENDED: "停止中", PENDING: "審査中" },
@@ -333,7 +340,7 @@ export const ja: TranslationSchema = {
     modalCreate: "新しい輸入発注を作成",
     modalEdit: "輸入発注を編集",
     modalSubtitle: "FR-03: 新規発注は必ず受付確認を経てから入庫処理に進みます",
-    col: { items: "明細(同一仕入先から複数品目)", incoterms: "インコタームズ", orderDate: "発注日", eta: "到着予定日", value: "合計金額(税込)", approver: "承認者" },
+    col: { items: "明細(同一仕入先から複数品目)", incoterms: "インコタームズ", orderDate: "発注日", eta: "到着予定日", value: "合計金額(税込)", approvalStatus: "承認状況" },
     viewItemsTitle: "明細一覧 ―「{{no}}」",
     field: {
       orderNo: "発注番号",
@@ -345,9 +352,7 @@ export const ja: TranslationSchema = {
       incoterms: "インコタームズ",
       orderDate: "発注日",
       etaDate: "到着予定日 (ETA)",
-      status: "ステータス",
-      approver: "承認者",
-      approverHelp: "この発注が承認された際に入力してください",
+      logisticsStatus: "物流状況",
       customsEntryNo: "輸入申告番号",
     },
     items: {
@@ -499,7 +504,7 @@ export const ja: TranslationSchema = {
     modalCreate: "新しい販売注文を作成",
     modalEdit: "販売注文を編集",
     modalSubtitle: "保存前に在庫・与信・免許を自動チェックします ― 明細は何件でも追加できます",
-    col: { items: "商品(1注文で複数品目)", invoice: "請求書番号", delivery: "配送ステータス" },
+    col: { items: "商品(1注文で複数品目)", invoice: "請求書番号", delivery: "配送ステータス", approvalStatus: "承認状況" },
     field: {
       orderNo: "注文番号",
       orderNoPlaceholder: "例: SO-2026-3310",
@@ -516,8 +521,6 @@ export const ja: TranslationSchema = {
       licenseValidUntil: "有効期限",
       licenseValid: "有効",
       deliveryStatus: "配送ステータス",
-      approver: "承認者(上長)",
-      approverHelp: "割引・与信の例外承認を申請する場合に入力してください",
       availableCredit: "得意先の利用可能与信額",
     },
     items: {
