@@ -13,6 +13,10 @@ const TONE_BY_CODE: Record<string, Tone> = {
   CUSTOMS_CLEARED: "info",
   RECEIVED: "success",
   ISSUE: "danger",
+  // orderStatus (approval status, shared by SalesOrder.status and ImportOrder.status — Phase 4)
+  DRAFT: "neutral",
+  REJECTED: "danger",
+  CANCELLED: "neutral",
   // license.status (permit tiers, Phase 7 — PERMIT-02)
   NORMAL: "success",
   PREPARATION: "neutral",
