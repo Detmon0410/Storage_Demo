@@ -58,7 +58,7 @@ describe("Import order ENFORCE-05 item/status validation", () => {
     incoterms: "FOB",
     orderDate: new Date().toISOString(),
     etaDate: new Date(Date.now() + 30 * 86400000).toISOString(),
-    status: "STAGING",
+    logisticsStatus: "STAGING",
     items: [{ productId, quantity: 10, unitPrice: 10 }],
     ...overrides,
   });
@@ -101,10 +101,10 @@ describe("Import order ENFORCE-05 item/status validation", () => {
     const res = await request(app)
       .post("/api/import-orders")
       .set("Authorization", `Bearer ${accessToken}`)
-      .send(baseOrder(orderNo, { status: "BOGUS" }));
+      .send(baseOrder(orderNo, { logisticsStatus: "BOGUS" }));
 
     expect(res.status).toBe(400);
-    expect(res.body.error.toLowerCase()).toContain("invalid status");
+    expect(res.body.error.toLowerCase()).toContain("invalid logisticsstatus");
   });
 
   it("rejects a backward status transition with a message containing 'invalid status transition'", async () => {
@@ -112,17 +112,17 @@ describe("Import order ENFORCE-05 item/status validation", () => {
     const createRes = await request(app)
       .post("/api/import-orders")
       .set("Authorization", `Bearer ${accessToken}`)
-      .send(baseOrder(orderNo, { status: "CUSTOMS_CLEARED" }));
+      .send(baseOrder(orderNo, { logisticsStatus: "CUSTOMS_CLEARED" }));
     expect(createRes.status).toBe(201);
     createdOrderNos.push(orderNo);
 
     const putRes = await request(app)
       .put(`/api/import-orders/${createRes.body.importOrderId}`)
       .set("Authorization", `Bearer ${accessToken}`)
-      .send({ status: "STAGING", items: [{ productId, quantity: 10, unitPrice: 10 }] });
+      .send({ logisticsStatus: "STAGING", items: [{ productId, quantity: 10, unitPrice: 10 }] });
 
     expect(putRes.status).toBe(400);
-    expect(putRes.body.error.toLowerCase()).toContain("invalid status transition");
+    expect(putRes.body.error.toLowerCase()).toContain("invalid logisticsstatus transition");
   });
 
   it("rejects any status change from a terminal state with a message containing 'terminal state'", async () => {
@@ -130,14 +130,14 @@ describe("Import order ENFORCE-05 item/status validation", () => {
     const createRes = await request(app)
       .post("/api/import-orders")
       .set("Authorization", `Bearer ${accessToken}`)
-      .send(baseOrder(orderNo, { status: "ISSUE" }));
+      .send(baseOrder(orderNo, { logisticsStatus: "ISSUE" }));
     expect(createRes.status).toBe(201);
     createdOrderNos.push(orderNo);
 
     const putRes = await request(app)
       .put(`/api/import-orders/${createRes.body.importOrderId}`)
       .set("Authorization", `Bearer ${accessToken}`)
-      .send({ status: "CUSTOMS_CLEARED", items: [{ productId, quantity: 10, unitPrice: 10 }] });
+      .send({ logisticsStatus: "CUSTOMS_CLEARED", items: [{ productId, quantity: 10, unitPrice: 10 }] });
 
     expect(putRes.status).toBe(400);
     expect(putRes.body.error.toLowerCase()).toContain("terminal state");
@@ -148,7 +148,7 @@ describe("Import order ENFORCE-05 item/status validation", () => {
     const createRes = await request(app)
       .post("/api/import-orders")
       .set("Authorization", `Bearer ${accessToken}`)
-      .send(baseOrder(orderNo, { status: "STAGING" }));
+      .send(baseOrder(orderNo, { logisticsStatus: "STAGING" }));
     expect(createRes.status).toBe(201);
     createdOrderNos.push(orderNo);
 
@@ -161,7 +161,7 @@ describe("Import order ENFORCE-05 item/status validation", () => {
     const putSame = await request(app)
       .put(`/api/import-orders/${createRes.body.importOrderId}`)
       .set("Authorization", `Bearer ${accessToken}`)
-      .send({ status: "STAGING", items: [{ productId, quantity: 12, unitPrice: 10 }] });
+      .send({ logisticsStatus: "STAGING", items: [{ productId, quantity: 12, unitPrice: 10 }] });
     expect(putSame.status).toBe(200);
   });
 });

@@ -75,7 +75,7 @@ describe("Import order receiving-gate HTTP tests (STOCK-04, D-10, D-04 regressio
     incoterms: "FOB",
     orderDate: new Date().toISOString(),
     etaDate: new Date(Date.now() + 30 * 86400000).toISOString(),
-    status: "STAGING",
+    logisticsStatus: "STAGING",
     items: [{ productId: productAId, quantity: 50, unitPrice: 10 }],
     ...overrides,
   });
@@ -103,7 +103,7 @@ describe("Import order receiving-gate HTTP tests (STOCK-04, D-10, D-04 regressio
       .set("Authorization", `Bearer ${accessToken}`)
       .send(
         baseOrder(orderNo, {
-          status: "RECEIVED",
+          logisticsStatus: "RECEIVED",
           items: [
             { productId: productAId, quantity: 30, unitPrice: 10 },
             { productId: productBId, quantity: 45, unitPrice: 15 },
@@ -154,7 +154,7 @@ describe("Import order receiving-gate HTTP tests (STOCK-04, D-10, D-04 regressio
     const putRes = await request(app)
       .put(`/api/import-orders/${createRes.body.importOrderId}`)
       .set("Authorization", `Bearer ${accessToken}`)
-      .send({ status: "RECEIVED", items: [{ productId: productAId, quantity: 20, unitPrice: 10 }] });
+      .send({ logisticsStatus: "RECEIVED", items: [{ productId: productAId, quantity: 20, unitPrice: 10 }] });
     expect(putRes.status).toBe(200);
 
     const lots = await prisma.inventoryStock.findMany({
@@ -174,7 +174,7 @@ describe("Import order receiving-gate HTTP tests (STOCK-04, D-10, D-04 regressio
     const createRes = await request(app)
       .post("/api/import-orders")
       .set("Authorization", `Bearer ${accessToken}`)
-      .send(baseOrder(orderNo, { status: "RECEIVED", items: [{ productId: productAId, quantity: 25, unitPrice: 10 }] }));
+      .send(baseOrder(orderNo, { logisticsStatus: "RECEIVED", items: [{ productId: productAId, quantity: 25, unitPrice: 10 }] }));
     expect(createRes.status).toBe(201);
     createdOrderNos.push(orderNo);
 
@@ -198,7 +198,7 @@ describe("Import order receiving-gate HTTP tests (STOCK-04, D-10, D-04 regressio
     const createRes = await request(app)
       .post("/api/import-orders")
       .set("Authorization", `Bearer ${accessToken}`)
-      .send(baseOrder(orderNo, { status: "RECEIVED", items: [{ productId: productAId, quantity: 5, unitPrice: 10 }] }));
+      .send(baseOrder(orderNo, { logisticsStatus: "RECEIVED", items: [{ productId: productAId, quantity: 5, unitPrice: 10 }] }));
     expect(createRes.status).toBe(201);
     createdOrderNos.push(orderNo);
 

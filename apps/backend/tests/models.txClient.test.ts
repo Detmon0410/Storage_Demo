@@ -141,7 +141,7 @@ describe("Model tx-client injection regression", () => {
       incoterms: "FOB",
       orderDate: new Date(),
       etaDate: new Date(Date.now() + 30 * 86400000),
-      status: "RECEIVED",
+      logisticsStatus: "RECEIVED",
       items: [{ productId: importProductId, quantity: 5, unitPrice: 10 }],
     });
     createdImportOrderNos.push(orderNo);
@@ -201,7 +201,7 @@ describe("Model tx-client injection regression", () => {
           incoterms: "FOB",
           orderDate: new Date(),
           etaDate: new Date(Date.now() + 30 * 86400000),
-          status: "PENDING",
+          logisticsStatus: "STAGING",
           items: [{ productId: importProductId, quantity: 3, unitPrice: 10 }],
         },
         tx,
