@@ -30,28 +30,39 @@ const parseItems = (value: unknown): ImportOrderItemInput[] => {
   });
 };
 
-const IMPORT_STATUS_VALUES = ["STAGING", "PENDING_APPROVAL", "APPROVED", "CUSTOMS_CLEARED", "RECEIVED", "ISSUE", "REJECTED"];
-const IMPORT_STATUS_PIPELINE: Record<string, number> = {
-  STAGING: 0,
-  PENDING_APPROVAL: 1,
-  APPROVED: 2,
-  CUSTOMS_CLEARED: 3,
-  RECEIVED: 4,
-  ISSUE: 5,
-};
+// D-02: logistics-only pipeline, fresh indices (no PENDING_APPROVAL/APPROVED — those moved to the
+// new OrderStatus `status` field below).
+const LOGISTICS_STATUS_VALUES = ["STAGING", "CUSTOMS_CLEARED", "RECEIVED", "ISSUE"];
+const LOGISTICS_PIPELINE: Record<string, number> = { STAGING: 0, CUSTOMS_CLEARED: 1, RECEIVED: 2 };
 
-const assertValidImportStatusTransition = (newStatus: string, currentStatus?: string) => {
-  if (!IMPORT_STATUS_VALUES.includes(newStatus)) {
-    throw new HttpError(400, `invalid status "${newStatus}"; must be one of ${IMPORT_STATUS_VALUES.join(", ")}`);
+const assertValidLogisticsStatusTransition = (newStatus: string, currentStatus?: string) => {
+  if (!LOGISTICS_STATUS_VALUES.includes(newStatus)) {
+    throw new HttpError(400, `invalid logisticsStatus "${newStatus}"; must be one of ${LOGISTICS_STATUS_VALUES.join(", ")}`);
   }
   if (currentStatus == null || currentStatus === newStatus) return;
-  if (currentStatus === "REJECTED" || currentStatus === "ISSUE") {
+  if (currentStatus === "ISSUE") {
+    throw new HttpError(400, `invalid status transition: cannot change logisticsStatus from terminal state "${currentStatus}"`);
+  }
+  const fromIndex = LOGISTICS_PIPELINE[currentStatus];
+  const toIndex = LOGISTICS_PIPELINE[newStatus];
+  if (fromIndex != null && toIndex != null && toIndex < fromIndex) {
+    throw new HttpError(400, `invalid logisticsStatus transition from "${currentStatus}" to "${newStatus}"`);
+  }
+};
+
+// APPROVAL-01: the real 5-value approval machine, shared shape with salesOrder.controller.ts (kept
+// as a separate per-file declaration, matching this codebase's existing per-controller duplication
+// style for status-value arrays).
+const ORDER_STATUS_VALUES = ["DRAFT", "PENDING_APPROVAL", "APPROVED", "REJECTED", "CANCELLED"];
+const assertValidOrderStatusTransition = (newStatus: string, currentStatus?: string) => {
+  if (!ORDER_STATUS_VALUES.includes(newStatus)) {
+    throw new HttpError(400, `invalid status "${newStatus}"; must be one of ${ORDER_STATUS_VALUES.join(", ")}`);
+  }
+  if (currentStatus === "APPROVED" || currentStatus === "REJECTED" || currentStatus === "CANCELLED") {
     throw new HttpError(400, `invalid status transition: cannot change status from terminal state "${currentStatus}"`);
   }
-  const fromIndex = IMPORT_STATUS_PIPELINE[currentStatus];
-  const toIndex = IMPORT_STATUS_PIPELINE[newStatus];
-  if (fromIndex != null && toIndex != null && toIndex < fromIndex) {
-    throw new HttpError(400, `invalid status transition from "${currentStatus}" to "${newStatus}"`);
+  if (newStatus === "CANCELLED" && !["DRAFT", "PENDING_APPROVAL"].includes(currentStatus ?? "DRAFT")) {
+    throw new HttpError(400, "CANCELLED is only reachable from DRAFT or PENDING_APPROVAL");
   }
 };
 
@@ -66,15 +77,15 @@ export const getImportOrder = asyncHandler(async (req, res) => {
 });
 
 export const createImportOrder = asyncHandler(async (req: AuthenticatedRequest, res) => {
-  const { orderNo, supplierId, country, incoterms, orderDate, etaDate, status, approver, customsEntryNo, items } =
+  const { orderNo, supplierId, country, incoterms, orderDate, etaDate, logisticsStatus, status, customsEntryNo, items } =
     req.body;
-  if (!orderNo || !supplierId || !country || !incoterms || !orderDate || !etaDate || !status) {
-    throw new HttpError(400, "orderNo, supplierId, country, incoterms, orderDate, etaDate, and status are required");
+  if (!orderNo || !supplierId || !country || !incoterms || !orderDate || !etaDate || !logisticsStatus) {
+    throw new HttpError(400, "orderNo, supplierId, country, incoterms, orderDate, etaDate, and logisticsStatus are required");
   }
-  if (status === "APPROVED" || status === "REJECTED") {
-    throw new HttpError(400, "Use the dedicated approve/reject endpoint to change status to APPROVED or REJECTED");
+  if (status != null) {
+    throw new HttpError(400, "status is server-derived from the import value threshold; use the dedicated approve/reject endpoint instead");
   }
-  assertValidImportStatusTransition(status);
+  assertValidLogisticsStatusTransition(logisticsStatus);
   const order = await prisma.$transaction(async (tx) => {
     const created = await ImportOrderModel.create(
       {
@@ -84,8 +95,7 @@ export const createImportOrder = asyncHandler(async (req: AuthenticatedRequest, 
         incoterms,
         orderDate: new Date(orderDate),
         etaDate: new Date(etaDate),
-        status,
-        approver,
+        logisticsStatus,
         customsEntryNo,
         items: parseItems(items),
         createdById: req.userId,
@@ -106,19 +116,19 @@ export const createImportOrder = asyncHandler(async (req: AuthenticatedRequest, 
 });
 
 export const updateImportOrder = asyncHandler(async (req: AuthenticatedRequest, res) => {
-  const { orderNo, supplierId, country, incoterms, orderDate, etaDate, status, approver, customsEntryNo, items } =
+  const { orderNo, supplierId, country, incoterms, orderDate, etaDate, logisticsStatus, status, customsEntryNo, items } =
     req.body;
 
-  if (status === "APPROVED" || status === "REJECTED") {
-    throw new HttpError(400, "Use the dedicated approve/reject endpoint to change status to APPROVED or REJECTED");
+  if (status != null) {
+    throw new HttpError(400, "status is server-derived from the import value threshold; use the dedicated approve/reject endpoint instead");
   }
 
   const importOrderId = Number(req.params.id);
   const before = await ImportOrderModel.findById(importOrderId);
   if (!before) throw new HttpError(404, "Import order not found");
 
-  if (status != null) {
-    assertValidImportStatusTransition(status, before.status);
+  if (logisticsStatus != null) {
+    assertValidLogisticsStatusTransition(logisticsStatus, before.logisticsStatus);
   }
 
   const order = await prisma.$transaction(async (tx) => {
@@ -131,8 +141,7 @@ export const updateImportOrder = asyncHandler(async (req: AuthenticatedRequest, 
         incoterms,
         orderDate: optionalDate(orderDate),
         etaDate: optionalDate(etaDate),
-        status,
-        approver,
+        logisticsStatus,
         customsEntryNo,
         items: items == null ? undefined : parseItems(items),
       },
@@ -178,10 +187,9 @@ export const approveImportOrder = asyncHandler(async (req: AuthenticatedRequest,
     if (existing.createdById != null && existing.createdById === req.userId) {
       throw new HttpError(403, "You cannot approve an order you created");
     }
-    const approverUser = await tx.user.findUnique({ where: { id: req.userId! }, select: { username: true } });
     const updated = await tx.importOrder.update({
       where: { importOrderId },
-      data: { status: "APPROVED", approver: approverUser?.username ?? null },
+      data: { status: "APPROVED", approvedById: req.userId, approvedAt: new Date() },
     });
     await AuditLogModel.record(tx, {
       entity: "ImportOrder",
@@ -204,10 +212,14 @@ export const rejectImportOrder = asyncHandler(async (req: AuthenticatedRequest, 
     if (existing.createdById != null && existing.createdById === req.userId) {
       throw new HttpError(403, "You cannot reject an order you created");
     }
-    const approverUser = await tx.user.findUnique({ where: { id: req.userId! }, select: { username: true } });
     const updated = await tx.importOrder.update({
       where: { importOrderId },
-      data: { status: "REJECTED", approver: approverUser?.username ?? null },
+      data: {
+        status: "REJECTED",
+        approvedById: req.userId,
+        approvedAt: new Date(),
+        rejectionReason: req.body?.reason ?? null,
+      },
     });
     await AuditLogModel.record(tx, {
       entity: "ImportOrder",
@@ -215,7 +227,7 @@ export const rejectImportOrder = asyncHandler(async (req: AuthenticatedRequest, 
       action: "reject",
       userId: req.userId ?? null,
       before: existing,
-      after: { ...updated, rejectionReason: req.body?.reason ?? null },
+      after: updated,
     });
     return updated;
   });
