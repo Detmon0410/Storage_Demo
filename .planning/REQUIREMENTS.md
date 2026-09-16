@@ -62,11 +62,15 @@
 ### Approval Workflow (APPROVAL)
 
 - [ ] **APPROVAL-01**: Import orders and sales orders support statuses DRAFT, PENDING_APPROVAL, APPROVED, REJECTED, and CANCELLED
-- [ ] **APPROVAL-02**: An order in a non-APPROVED state does not affect final stock or delivery
-- [ ] **APPROVAL-03**: Stock is decremented at the point an order transitions to APPROVED, not at order creation
-- [ ] **APPROVAL-04**: Approving or rejecting an order records the approver, timestamp, decision, and (if rejected) a reason
+- [x] **APPROVAL-02
+**: An order in a non-APPROVED state does not affect final stock or delivery
+- [x] **APPROVAL-03
+**: Stock is decremented at the point an order transitions to APPROVED, not at order creation
+- [x] **APPROVAL-04
+**: Approving or rejecting an order records the approver, timestamp, decision, and (if rejected) a reason
 - [ ] **APPROVAL-05**: Orders exceeding credit limit or discount limit thresholds automatically require approval before proceeding
-- [ ] **APPROVAL-06**: A user with Manager/Approver permission can approve or reject a pending order; a user without that permission cannot
+- [x] **APPROVAL-06
+**: A user with Manager/Approver permission can approve or reject a pending order; a user without that permission cannot
 
 ### Liquor Tax & Compliance Data (TAX)
 

@@ -130,7 +130,7 @@ describe("Order approve/reject no-self-approval enforcement", () => {
         incoterms: "FOB",
         orderDate: new Date().toISOString(),
         etaDate: new Date(Date.now() + 30 * 86400000).toISOString(),
-        status: "STAGING",
+        logisticsStatus: "STAGING",
         items: [{ productId: importProductId, quantity: 1, unitPrice: 10 }],
       });
     expect(createRes.status).toBe(201);
@@ -149,6 +149,8 @@ describe("Order approve/reject no-self-approval enforcement", () => {
       .send({});
     expect(approveRes.status).toBe(200);
     expect(approveRes.body.status).toBe("APPROVED");
+    expect(approveRes.body.approvedById).toBe(approver.user.id);
+    expect(approveRes.body.approvedAt).not.toBeNull();
   });
 
   it("rejects the creator's own SalesOrder approve attempt with 403, but allows a different SALES_ORDER_APPROVE holder to approve it (200, deliveryStatus APPROVED)", async () => {
@@ -184,7 +186,9 @@ describe("Order approve/reject no-self-approval enforcement", () => {
       .set("Authorization", `Bearer ${approverToken}`)
       .send({});
     expect(approveRes.status).toBe(200);
-    expect(approveRes.body.deliveryStatus).toBe("APPROVED");
+    expect(approveRes.body.status).toBe("APPROVED");
+    expect(approveRes.body.approvedById).toBe(approver.user.id);
+    expect(approveRes.body.approvedAt).not.toBeNull();
   });
 
   it("rejects the creator's own SalesOrder reject attempt with 403, but allows a different approve-holder to reject it (200, deliveryStatus REJECTED)", async () => {
@@ -220,7 +224,8 @@ describe("Order approve/reject no-self-approval enforcement", () => {
       .set("Authorization", `Bearer ${approverToken}`)
       .send({ reason: "not compliant" });
     expect(rejectRes.status).toBe(200);
-    expect(rejectRes.body.deliveryStatus).toBe("REJECTED");
+    expect(rejectRes.body.status).toBe("REJECTED");
+    expect(rejectRes.body.rejectionReason).toBe("not compliant");
   });
 
   it("allows approval of an order with createdById: null (historical data) by anyone holding IMPORT_ORDER_APPROVE", async () => {
@@ -237,7 +242,7 @@ describe("Order approve/reject no-self-approval enforcement", () => {
         incoterms: "FOB",
         orderDate: new Date(),
         etaDate: new Date(Date.now() + 30 * 86400000),
-        status: "PENDING",
+        logisticsStatus: "STAGING",
         skuItemCount: 1,
         totalValue: 10,
         createdById: null,
@@ -252,6 +257,8 @@ describe("Order approve/reject no-self-approval enforcement", () => {
       .send({});
     expect(approveRes.status).toBe(200);
     expect(approveRes.body.status).toBe("APPROVED");
+    expect(approveRes.body.approvedById).toBe(approver.user.id);
+    expect(approveRes.body.approvedAt).not.toBeNull();
   });
 
   it("rejects the last editor's (updatedById) own SalesOrder approve attempt with 403 mentioning 'last edited', but allows a third-party approver to approve it (200)", async () => {
@@ -296,6 +303,6 @@ describe("Order approve/reject no-self-approval enforcement", () => {
       .set("Authorization", `Bearer ${finalApproverToken}`)
       .send({});
     expect(approveRes.status).toBe(200);
-    expect(approveRes.body.deliveryStatus).toBe("APPROVED");
+    expect(approveRes.body.status).toBe("APPROVED");
   });
 });

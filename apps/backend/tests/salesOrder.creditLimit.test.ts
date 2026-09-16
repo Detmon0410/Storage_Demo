@@ -88,7 +88,7 @@ describe("Sales order credit-limit soft-block and deferred decrement (ENFORCE-03
     await cleanupTestUsers();
   });
 
-  it("soft-blocks an order that would push balance over the credit limit (201, requiresApproval: true, no decrement yet)", async () => {
+  it("soft-blocks an order that would push balance over the credit limit (201, status: PENDING_APPROVAL, no decrement yet)", async () => {
     const inventoryStock = await prisma.inventoryStock.create({
       data: {
         productId,
@@ -117,7 +117,7 @@ describe("Sales order credit-limit soft-block and deferred decrement (ENFORCE-03
       });
 
     expect(res.status).toBe(201);
-    expect(res.body.requiresApproval).toBe(true);
+    expect(res.body.status).toBe("PENDING_APPROVAL");
     createdOrderNos.push(orderNo);
 
     const lot = await prisma.inventoryStock.findUnique({ where: { inventoryStockId } });
@@ -156,7 +156,7 @@ describe("Sales order credit-limit soft-block and deferred decrement (ENFORCE-03
         items: [{ productId, quantity: 10, unitPrice: 50, discount: 0, inventoryStockId }],
       });
     expect(res.status).toBe(201);
-    expect(res.body.requiresApproval).toBe(true);
+    expect(res.body.status).toBe("PENDING_APPROVAL");
     createdOrderNos.push(orderNo);
 
     const referenceNo = `SO:${orderNo}`;
@@ -166,7 +166,7 @@ describe("Sales order credit-limit soft-block and deferred decrement (ENFORCE-03
       .set("Authorization", `Bearer ${approverAccessToken}`)
       .send({});
     expect(approveRes.status).toBe(200);
-    expect(approveRes.body.requiresApproval).toBe(false);
+    expect(approveRes.body.status).toBe("APPROVED");
 
     const lotAfterApprove = await prisma.inventoryStock.findUnique({ where: { inventoryStockId } });
     expect(lotAfterApprove?.quantityOnHand).toBe(90);
@@ -204,7 +204,7 @@ describe("Sales order credit-limit soft-block and deferred decrement (ENFORCE-03
       });
 
     expect(res.status).toBe(201);
-    expect(res.body.requiresApproval).toBe(false);
+    expect(res.body.status).toBe("APPROVED");
     createdOrderNos.push(orderNo);
 
     const lot = await prisma.inventoryStock.findUnique({ where: { inventoryStockId } });

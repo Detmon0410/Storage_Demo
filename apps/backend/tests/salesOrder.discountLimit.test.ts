@@ -83,7 +83,7 @@ describe("Sales order discount-limit soft-block and deferred decrement (ENFORCE-
     await cleanupTestUsers();
   });
 
-  it("soft-blocks an order with a line discount above the customer's standardDiscount (201, requiresApproval: true, no decrement yet)", async () => {
+  it("soft-blocks an order with a line discount above the customer's standardDiscount (201, status: PENDING_APPROVAL, no decrement yet)", async () => {
     const inventoryStock = await prisma.inventoryStock.create({
       data: {
         productId,
@@ -112,7 +112,7 @@ describe("Sales order discount-limit soft-block and deferred decrement (ENFORCE-
       });
 
     expect(res.status).toBe(201);
-    expect(res.body.requiresApproval).toBe(true);
+    expect(res.body.status).toBe("PENDING_APPROVAL");
     createdOrderNos.push(orderNo);
 
     const lot = await prisma.inventoryStock.findUnique({ where: { inventoryStockId } });
@@ -152,7 +152,7 @@ describe("Sales order discount-limit soft-block and deferred decrement (ENFORCE-
       });
 
     expect(res.status).toBe(201);
-    expect(res.body.requiresApproval).toBe(false);
+    expect(res.body.status).toBe("APPROVED");
     createdOrderNos.push(orderNo);
 
     const lot = await prisma.inventoryStock.findUnique({ where: { inventoryStockId } });
@@ -191,7 +191,7 @@ describe("Sales order discount-limit soft-block and deferred decrement (ENFORCE-
       });
 
     expect(res.status).toBe(201);
-    expect(res.body.requiresApproval).toBe(true);
+    expect(res.body.status).toBe("PENDING_APPROVAL");
     createdOrderNos.push(orderNo);
   });
 });
