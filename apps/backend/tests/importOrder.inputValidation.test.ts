@@ -60,7 +60,7 @@ describe("Import order input + status-transition validation (ENFORCE-05)", () =>
     incoterms: "FOB",
     orderDate: new Date().toISOString(),
     etaDate: new Date(Date.now() + 30 * 86400000).toISOString(),
-    status: "STAGING",
+    logisticsStatus: "STAGING",
     items: [{ productId, quantity: 10, unitPrice: 10 }],
     ...overrides,
   });
@@ -92,10 +92,10 @@ describe("Import order input + status-transition validation (ENFORCE-05)", () =>
     const res = await request(app)
       .post("/api/import-orders")
       .set("Authorization", `Bearer ${accessToken}`)
-      .send(baseOrder(orderNo, { status: "BOGUS" }));
+      .send(baseOrder(orderNo, { logisticsStatus: "BOGUS" }));
 
     expect(res.status).toBe(400);
-    expect(res.body.error.toLowerCase()).toContain("invalid status");
+    expect(res.body.error.toLowerCase()).toContain("invalid logisticsstatus");
   });
 
   it("rejects status APPROVED on create, even for a caller without approve permission", async () => {
@@ -125,17 +125,17 @@ describe("Import order input + status-transition validation (ENFORCE-05)", () =>
     const createRes = await request(app)
       .post("/api/import-orders")
       .set("Authorization", `Bearer ${accessToken}`)
-      .send(baseOrder(orderNo, { status: "CUSTOMS_CLEARED" }));
+      .send(baseOrder(orderNo, { logisticsStatus: "CUSTOMS_CLEARED" }));
     expect(createRes.status).toBe(201);
     createdOrderNos.push(orderNo);
 
     const putRes = await request(app)
       .put(`/api/import-orders/${createRes.body.importOrderId}`)
       .set("Authorization", `Bearer ${accessToken}`)
-      .send({ status: "STAGING" });
+      .send({ logisticsStatus: "STAGING" });
 
     expect(putRes.status).toBe(400);
-    expect(putRes.body.error.toLowerCase()).toContain("invalid status transition");
+    expect(putRes.body.error.toLowerCase()).toContain("invalid logisticsstatus transition");
   });
 
   it("rejects any status change away from a terminal state with an error containing 'terminal state'", async () => {
@@ -143,20 +143,20 @@ describe("Import order input + status-transition validation (ENFORCE-05)", () =>
     const createRes = await request(app)
       .post("/api/import-orders")
       .set("Authorization", `Bearer ${accessToken}`)
-      .send(baseOrder(orderNo, { status: "STAGING" }));
+      .send(baseOrder(orderNo, { logisticsStatus: "STAGING" }));
     expect(createRes.status).toBe(201);
     createdOrderNos.push(orderNo);
 
     const issueRes = await request(app)
       .put(`/api/import-orders/${createRes.body.importOrderId}`)
       .set("Authorization", `Bearer ${accessToken}`)
-      .send({ status: "ISSUE" });
+      .send({ logisticsStatus: "ISSUE" });
     expect(issueRes.status).toBe(200);
 
     const putRes = await request(app)
       .put(`/api/import-orders/${createRes.body.importOrderId}`)
       .set("Authorization", `Bearer ${accessToken}`)
-      .send({ status: "STAGING" });
+      .send({ logisticsStatus: "STAGING" });
 
     expect(putRes.status).toBe(400);
     expect(putRes.body.error.toLowerCase()).toContain("terminal state");
@@ -167,16 +167,16 @@ describe("Import order input + status-transition validation (ENFORCE-05)", () =>
     const createRes = await request(app)
       .post("/api/import-orders")
       .set("Authorization", `Bearer ${accessToken}`)
-      .send(baseOrder(orderNo, { status: "STAGING" }));
+      .send(baseOrder(orderNo, { logisticsStatus: "STAGING" }));
     expect(createRes.status).toBe(201);
     createdOrderNos.push(orderNo);
 
     const putRes = await request(app)
       .put(`/api/import-orders/${createRes.body.importOrderId}`)
       .set("Authorization", `Bearer ${accessToken}`)
-      .send({ status: "PENDING_APPROVAL" });
+      .send({ logisticsStatus: "CUSTOMS_CLEARED" });
 
     expect(putRes.status).toBe(200);
-    expect(putRes.body.status).toBe("PENDING_APPROVAL");
+    expect(putRes.body.logisticsStatus).toBe("CUSTOMS_CLEARED");
   });
 });

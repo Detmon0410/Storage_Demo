@@ -53,7 +53,7 @@ describe("ImportOrderModel receiving gate (D-04/D-10)", () => {
       incoterms: "FOB",
       orderDate: new Date(),
       etaDate: new Date(Date.now() + 30 * 86400000),
-      status: "STAGING",
+      logisticsStatus: "STAGING",
       items: [{ productId, quantity: 50, unitPrice: 10 }],
     });
     createdOrderNos.push(orderNo);
@@ -75,7 +75,7 @@ describe("ImportOrderModel receiving gate (D-04/D-10)", () => {
       incoterms: "FOB",
       orderDate: new Date(),
       etaDate: new Date(Date.now() + 30 * 86400000),
-      status: "RECEIVED",
+      logisticsStatus: "RECEIVED",
       items: [{ productId, quantity: 100, unitPrice: 500 }],
     });
     createdOrderNos.push(orderNo);
@@ -101,13 +101,13 @@ describe("ImportOrderModel receiving gate (D-04/D-10)", () => {
       incoterms: "FOB",
       orderDate: new Date(),
       etaDate: new Date(Date.now() + 30 * 86400000),
-      status: "STAGING",
+      logisticsStatus: "STAGING",
       items: [{ productId, quantity: 20, unitPrice: 10 }],
     });
     createdOrderNos.push(orderNo);
 
     await ImportOrderModel.update(created.importOrderId, {
-      status: "RECEIVED",
+      logisticsStatus: "RECEIVED",
       items: [{ productId, quantity: 20, unitPrice: 10 }],
     });
 
@@ -127,7 +127,7 @@ describe("ImportOrderModel receiving gate (D-04/D-10)", () => {
       incoterms: "FOB",
       orderDate: new Date(),
       etaDate: new Date(Date.now() + 30 * 86400000),
-      status: "RECEIVED",
+      logisticsStatus: "RECEIVED",
       items: [{ productId, quantity: 30, unitPrice: 10 }],
     });
     createdOrderNos.push(orderNo);
@@ -160,12 +160,12 @@ describe("ImportOrderModel receiving gate (D-04/D-10)", () => {
       incoterms: "FOB",
       orderDate: new Date(),
       etaDate: new Date(Date.now() + 30 * 86400000),
-      status: "RECEIVED",
+      logisticsStatus: "RECEIVED",
       items: [{ productId, quantity: 10, unitPrice: 10 }],
     });
     createdOrderNos.push(orderNo);
 
-    const updated = await ImportOrderModel.update(created.importOrderId, { status: "ISSUE" });
-    expect(updated.status).toBe("ISSUE");
+    const updated = await ImportOrderModel.update(created.importOrderId, { logisticsStatus: "ISSUE" });
+    expect(updated.logisticsStatus).toBe("ISSUE");
   });
 });

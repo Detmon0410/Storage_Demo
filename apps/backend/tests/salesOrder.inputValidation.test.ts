@@ -192,7 +192,7 @@ describe("Sales order line-item and deliveryStatus validation (ENFORCE-05)", () 
     expect(res.body.error.toLowerCase()).toContain("invalid deliverystatus");
   });
 
-  it("rejects deliveryStatus APPROVED on create, even for a caller without approve permission", async () => {
+  it("rejects status APPROVED on create, even for a caller without approve permission", async () => {
     const inventoryStockId = await makeLot("BYPASS");
     const orderNo = `TEST_INVAL_BYPASS_${Date.now()}`;
     const res = await request(app)
@@ -202,7 +202,8 @@ describe("Sales order line-item and deliveryStatus validation (ENFORCE-05)", () 
         orderNo,
         customerId,
         customerLicenseId,
-        deliveryStatus: "APPROVED",
+        deliveryStatus: "PENDING",
+        status: "APPROVED",
         invoiceNo: `INV-${orderNo}`,
         items: [{ productId, quantity: 1, unitPrice: 10, discount: 0, inventoryStockId }],
       });
@@ -210,7 +211,7 @@ describe("Sales order line-item and deliveryStatus validation (ENFORCE-05)", () 
     expect(res.body.error.toLowerCase()).toContain("dedicated approve/reject endpoint");
   });
 
-  it("rejects deliveryStatus REJECTED on create", async () => {
+  it("rejects status REJECTED on create", async () => {
     const inventoryStockId = await makeLot("BYPASSREJ");
     const orderNo = `TEST_INVAL_BYPASSREJ_${Date.now()}`;
     const res = await request(app)
@@ -220,7 +221,8 @@ describe("Sales order line-item and deliveryStatus validation (ENFORCE-05)", () 
         orderNo,
         customerId,
         customerLicenseId,
-        deliveryStatus: "REJECTED",
+        deliveryStatus: "PENDING",
+        status: "REJECTED",
         invoiceNo: `INV-${orderNo}`,
         items: [{ productId, quantity: 1, unitPrice: 10, discount: 0, inventoryStockId }],
       });
@@ -278,7 +280,7 @@ describe("Sales order line-item and deliveryStatus validation (ENFORCE-05)", () 
     expect(updateRes.body.error.toLowerCase()).toContain("invalid status transition");
   });
 
-  it("rejects any further deliveryStatus change once an order is APPROVED (terminal state)", async () => {
+  it("allows deliveryStatus changes after an order's approval status is APPROVED (deliveryStatus pipeline is independent of the approval status per D-03)", async () => {
     const inventoryStockId = await makeLot("TERMINAL");
     const orderNo = `TEST_INVAL_TERMINAL_${Date.now()}`;
     const createRes = await request(app)
@@ -301,14 +303,15 @@ describe("Sales order line-item and deliveryStatus validation (ENFORCE-05)", () 
       .set("Authorization", `Bearer ${approverAccessToken}`)
       .send({});
     expect(approveRes.status).toBe(200);
-    expect(approveRes.body.deliveryStatus).toBe("APPROVED");
+    expect(approveRes.body.status).toBe("APPROVED");
+    expect(approveRes.body.deliveryStatus).toBe("PENDING");
 
     const updateRes = await request(app)
       .put(`/api/sales-orders/${salesOrderId}`)
       .set("Authorization", `Bearer ${accessToken}`)
       .send({ deliveryStatus: "SHIPPING" });
-    expect(updateRes.status).toBe(400);
-    expect(updateRes.body.error.toLowerCase()).toContain("terminal state");
+    expect(updateRes.status).toBe(200);
+    expect(updateRes.body.deliveryStatus).toBe("SHIPPING");
   });
 
   it("accepts a valid forward transition (PENDING -> SHIPPING) with no items key (positive control)", async () => {

@@ -127,7 +127,7 @@ describe("Generic PUT restriction on order status (APPROVED/REJECTED bypass clos
         incoterms: "FOB",
         orderDate: new Date().toISOString(),
         etaDate: new Date(Date.now() + 30 * 86400000).toISOString(),
-        status: "STAGING",
+        logisticsStatus: "STAGING",
         items: [{ productId: importProductId, quantity: 1, unitPrice: 10 }],
       });
     expect(createRes.status).toBe(201);
@@ -139,10 +139,10 @@ describe("Generic PUT restriction on order status (APPROVED/REJECTED bypass clos
       .send({ status: "APPROVED" });
 
     expect(putRes.status).toBe(400);
-    expect(putRes.body.error).toContain("Use the dedicated approve/reject endpoint");
+    expect(putRes.body.error.toLowerCase()).toContain("use the dedicated approve/reject endpoint");
   });
 
-  it("PUT /api/sales-orders/:id with deliveryStatus: REJECTED returns 400 with the guard's error message", async () => {
+  it("PUT /api/sales-orders/:id with status: REJECTED returns 400 with the guard's error message", async () => {
     const orderNo = `TEST_GUR_SALE_REJ_${Date.now()}`;
     const createRes = await request(app)
       .post("/api/sales-orders")
@@ -161,10 +161,10 @@ describe("Generic PUT restriction on order status (APPROVED/REJECTED bypass clos
     const putRes = await request(app)
       .put(`/api/sales-orders/${createRes.body.salesOrderId}`)
       .set("Authorization", `Bearer ${accessToken}`)
-      .send({ deliveryStatus: "REJECTED" });
+      .send({ status: "REJECTED" });
 
     expect(putRes.status).toBe(400);
-    expect(putRes.body.error).toContain("Use the dedicated approve/reject endpoint");
+    expect(putRes.body.error.toLowerCase()).toContain("use the dedicated approve/reject endpoint");
   });
 
   it("PUT with any other status value still succeeds normally (restriction is narrowly scoped)", async () => {
@@ -179,7 +179,7 @@ describe("Generic PUT restriction on order status (APPROVED/REJECTED bypass clos
         incoterms: "FOB",
         orderDate: new Date().toISOString(),
         etaDate: new Date(Date.now() + 30 * 86400000).toISOString(),
-        status: "STAGING",
+        logisticsStatus: "STAGING",
         items: [{ productId: importProductId, quantity: 1, unitPrice: 10 }],
       });
     expect(createRes.status).toBe(201);
@@ -188,9 +188,9 @@ describe("Generic PUT restriction on order status (APPROVED/REJECTED bypass clos
     const putRes = await request(app)
       .put(`/api/import-orders/${createRes.body.importOrderId}`)
       .set("Authorization", `Bearer ${accessToken}`)
-      .send({ status: "STAGING" });
+      .send({ logisticsStatus: "STAGING" });
 
     expect(putRes.status).toBe(200);
-    expect(putRes.body.status).toBe("STAGING");
+    expect(putRes.body.logisticsStatus).toBe("STAGING");
   });
 });

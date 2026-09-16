@@ -92,7 +92,7 @@ describe("Import order backend license-expiry blocking", () => {
         incoterms: "FOB",
         orderDate: new Date().toISOString(),
         etaDate: new Date(Date.now() + 30 * 86400000).toISOString(),
-        status: "STAGING",
+        logisticsStatus: "STAGING",
         items: [{ productId: expiredPermitProductId, quantity: 10, unitPrice: 10 }],
       });
 
@@ -115,7 +115,7 @@ describe("Import order backend license-expiry blocking", () => {
         incoterms: "FOB",
         orderDate: new Date().toISOString(),
         etaDate: new Date(Date.now() + 30 * 86400000).toISOString(),
-        status: "STAGING",
+        logisticsStatus: "STAGING",
         items: [{ productId: cleanProductId, quantity: 10, unitPrice: 10 }],
       });
 
@@ -135,7 +135,7 @@ describe("Import order backend license-expiry blocking", () => {
         incoterms: "FOB",
         orderDate: new Date().toISOString(),
         etaDate: new Date(Date.now() + 30 * 86400000).toISOString(),
-        status: "STAGING",
+        logisticsStatus: "STAGING",
         items: [{ productId: cleanProductId, quantity: 10, unitPrice: 10 }],
       });
     expect(createRes.status).toBe(201);
