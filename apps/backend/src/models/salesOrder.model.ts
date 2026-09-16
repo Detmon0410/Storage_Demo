@@ -1,4 +1,4 @@
-import type { PrismaClient, Prisma } from "@prisma/client";
+import type { PrismaClient, Prisma, OrderStatus } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../middleware/errorHandler.js";
 import { assertProductsNotBlockedTx } from "../utils/licenseGate.js";
@@ -105,7 +105,6 @@ export const SalesOrderModel = {
       customerLicenseId: number;
       deliveryStatus: string;
       invoiceNo: string;
-      approver?: string;
       items: SalesOrderItemInput[];
       createdById?: number;
     },
@@ -116,6 +115,7 @@ export const SalesOrderModel = {
       await assertProductsNotBlockedTx(tx as Prisma.TransactionClient, data.items.map((i) => i.productId));
       const licenseFields = await validateAndSnapshotLicense(tx as Prisma.TransactionClient, data.customerId, data.customerLicenseId);
       const { requiresApproval } = await applyLotGuardsTx(tx as Prisma.TransactionClient, data.customerId, data.items);
+      const status: OrderStatus = requiresApproval ? "PENDING_APPROVAL" : "APPROVED";
 
       const order = await tx.salesOrder.create({
         data: {
@@ -123,19 +123,18 @@ export const SalesOrderModel = {
           customerId: data.customerId,
           deliveryStatus: data.deliveryStatus,
           invoiceNo: data.invoiceNo,
-          approver: data.approver,
           ...orderTotals(rows),
           items: { create: rows },
           ...licenseFields,
           createdById: data.createdById,
-          requiresApproval,
+          status,
         },
         include: withRelations,
       });
-      // D-05: only decrement lots immediately if the order does NOT require approval. If it does,
-      // the decrement is deferred until a Manager/Approver approves it (see
-      // salesOrder.controller.ts approveSalesOrder).
-      if (!requiresApproval) {
+      // APPROVAL-02/03: stock decrements exactly at the moment an order's status is APPROVED —
+      // never at creation time for an order that requires approval. Deferred decrement happens
+      // in salesOrder.controller.ts's approveSalesOrder when it later transitions to APPROVED.
+      if (status === "APPROVED") {
         await createStockOutTx(tx as Prisma.TransactionClient, data.orderNo, data.items);
       }
       return order;
@@ -151,7 +150,6 @@ export const SalesOrderModel = {
       customerLicenseId: number;
       deliveryStatus: string;
       invoiceNo: string;
-      approver: string;
       items: SalesOrderItemInput[];
       updatedById: number;
     }>,
@@ -191,6 +189,7 @@ export const SalesOrderModel = {
 
       const customerId = data.customerId ?? existing.customerId;
       const { requiresApproval } = await applyLotGuardsTx(tx as Prisma.TransactionClient, customerId, items);
+      const status: OrderStatus = requiresApproval ? "PENDING_APPROVAL" : "APPROVED";
 
       const updated = await tx.salesOrder.update({
         where: { salesOrderId },
@@ -199,14 +198,14 @@ export const SalesOrderModel = {
           ...licenseFields,
           ...orderTotals(rows),
           items: { create: rows },
-          requiresApproval,
+          status,
           updatedById: data.updatedById,
         },
         include: withRelations,
       });
 
       const orderNo = data.orderNo ?? existing.orderNo;
-      if (!requiresApproval) {
+      if (status === "APPROVED") {
         await createStockOutTx(tx as Prisma.TransactionClient, orderNo, items);
       }
       return updated;

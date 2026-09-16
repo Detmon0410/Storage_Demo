@@ -1,9 +1,10 @@
-import type { PrismaClient, Prisma } from "@prisma/client";
+import type { PrismaClient, Prisma, OrderStatus } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../middleware/errorHandler.js";
 import { assertProductsNotBlockedTx } from "../utils/licenseGate.js";
 import { createStockTransactionTx, reverseAndDeleteByReferenceTx } from "./stockTransaction.model.js";
 import { importOrderStockReference } from "../utils/stockReference.js";
+import { assertImportValueThresholdTx } from "../utils/importValueGate.js";
 
 type Client = PrismaClient | Prisma.TransactionClient;
 
@@ -97,8 +98,7 @@ export const ImportOrderModel = {
       incoterms: string;
       orderDate: Date;
       etaDate: Date;
-      status: string;
-      approver?: string;
+      logisticsStatus: string;
       customsEntryNo?: string;
       items: ImportOrderItemInput[];
       createdById?: number;
@@ -106,6 +106,9 @@ export const ImportOrderModel = {
     client: Client = prisma,
   ) => {
     const rows = toItemRows(data.items);
+    const { totalValue } = orderTotals(rows);
+    const { requiresApproval } = assertImportValueThresholdTx(totalValue);
+    const status: OrderStatus = requiresApproval ? "PENDING_APPROVAL" : "APPROVED";
     const run = async (tx: Client) => {
       await assertProductsNotBlockedTx(tx as Prisma.TransactionClient, data.items.map((i) => i.productId));
       const order = await tx.importOrder.create({
@@ -116,8 +119,8 @@ export const ImportOrderModel = {
           incoterms: data.incoterms,
           orderDate: data.orderDate,
           etaDate: data.etaDate,
-          status: data.status,
-          approver: data.approver,
+          logisticsStatus: data.logisticsStatus,
+          status,
           customsEntryNo: data.customsEntryNo,
           skuItemCount: rows.length,
           ...orderTotals(rows),
@@ -126,7 +129,10 @@ export const ImportOrderModel = {
         },
         include: withRelations,
       });
-      if (data.status === "RECEIVED") {
+      // APPROVAL-02/03 + Phase 3 RECEIVED-gate precedent: lot creation requires BOTH the logistics
+      // pipeline to be at RECEIVED AND the order's approval status to be APPROVED. Gating on only
+      // one re-introduces an approval-bypass bug — see RESEARCH.md Anti-Patterns.
+      if (data.logisticsStatus === "RECEIVED" && status === "APPROVED") {
         const createdItems = await tx.importOrderItem.findMany({ where: { importOrderId: order.importOrderId } });
         const itemsWithIds = data.items.map((item, index) => ({
           ...item,
@@ -148,8 +154,7 @@ export const ImportOrderModel = {
       incoterms: string;
       orderDate: Date;
       etaDate: Date;
-      status: string;
-      approver: string;
+      logisticsStatus: string;
       customsEntryNo: string;
       items: ImportOrderItemInput[];
     }>,
@@ -164,10 +169,10 @@ export const ImportOrderModel = {
     const run = async (tx: Client) => {
       const existingStatus = await tx.importOrder.findUnique({
         where: { importOrderId },
-        select: { orderNo: true, status: true },
+        select: { orderNo: true, logisticsStatus: true, status: true },
       });
       if (!existingStatus) throw new HttpError(404, "Import order not found");
-      if (existingStatus.status === "RECEIVED") {
+      if (existingStatus.logisticsStatus === "RECEIVED") {
         throw new HttpError(400, "Cannot edit items on a received import order; use a stock-adjustment instead");
       }
 
@@ -190,7 +195,14 @@ export const ImportOrderModel = {
       });
 
       const orderNo = data.orderNo ?? existingStatus.orderNo;
-      if (data.status === "RECEIVED" && existingStatus.status !== "RECEIVED") {
+      const resolvedApprovalStatus = updated.status;
+      // Same dual gate as create(): logisticsStatus transitioning to RECEIVED is necessary but not
+      // sufficient — the order's approval status must also be APPROVED.
+      if (
+        data.logisticsStatus === "RECEIVED" &&
+        existingStatus.logisticsStatus !== "RECEIVED" &&
+        resolvedApprovalStatus === "APPROVED"
+      ) {
         const createdItems = await tx.importOrderItem.findMany({ where: { importOrderId } });
         const itemsWithIds = items.map((item, index) => ({
           ...item,
