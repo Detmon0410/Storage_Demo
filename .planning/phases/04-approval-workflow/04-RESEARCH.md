@@ -496,15 +496,17 @@ This phase is a rename/refactor of persisted status fields, so a runtime-state c
 
 ## Open Questions
 
-1. **Should `ImportOrder.logisticsStatus` allow a `PENDING` initial value distinct from `STAGING`, or does `STAGING` remain the sole pre-customs value?**
+1. **(RESOLVED) Should `ImportOrder.logisticsStatus` allow a `PENDING` initial value distinct from `STAGING`, or does `STAGING` remain the sole pre-customs value?**
    - What we know: D-02 says the renamed field retains "only STAGING/CUSTOMS_CLEARED/RECEIVED/ISSUE."
    - What's unclear: Whether `STAGING` is meant to be the universal starting logistics state regardless of `status` (DRAFT/PENDING_APPROVAL/APPROVED), or whether an import order not yet approved should have some other logistics placeholder.
    - Recommendation: Default `logisticsStatus` to `STAGING` for every new import order regardless of approval `status` (consistent with D-05's note that approval and RECEIVED-gating are independent checks) — this is the simplest interpretation and matches the data-migration mapping above.
+   - Resolution: Planner confirmed the client continues to supply `logisticsStatus` on create (unchanged, defaults to `STAGING`) — the plans implement this default regardless of approval `status`, per the recommendation above.
 
-2. **Exact wording/shape for the frontend's approve/reject UI reflecting `rejectionReason` and `approvedById` → display name**
+2. **(RESOLVED) Exact wording/shape for the frontend's approve/reject UI reflecting `rejectionReason` and `approvedById` → display name**
    - What we know: CONTEXT.md's `<specifics>` section says no new UI screens, existing approve/reject actions just need to reflect new values.
    - What's unclear: Whether the existing free-text `approver` display column in `SalesOrdersPage.tsx`/`ImportOrdersPage.tsx` tables should be replaced with a joined `approvedBy.username`, and whether a reject reason needs a new input field in the UI (currently `reason` is only accepted via API body, per `order.noSelfApproval.test.ts`'s reject calls with `{ reason: "..." }` — but no visible UI form was found in `SalesOrdersPage.tsx`/`ImportOrdersPage.tsx` for entering it).
    - Recommendation: Planner should grep both pages for an existing reject-reason input; if none exists, adding a minimal reason `<textarea>` on the reject action is in-scope per APPROVAL-04's literal requirement ("records ... a reason when rejected"), even though CONTEXT.md frames this phase as "backend-only."
+   - Resolution: No existing reject-reason input was found (confirmed) — 04-06-PLAN.md Task 5 adds Approve/Reject buttons on PENDING_APPROVAL rows plus a reason `<textarea>` prompt for reject, calling the real approve/reject API endpoints (gated client-side by SALES_ORDER_APPROVE/IMPORT_ORDER_APPROVE for UX only; backend remains the enforcement point).
 
 ## Environment Availability
 
