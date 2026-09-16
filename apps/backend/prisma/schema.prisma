@@ -105,16 +105,20 @@ model ImportOrder {
   orderDate      DateTime @map("order_date") @db.Date
   etaDate        DateTime @map("eta_date") @db.Date
   skuItemCount   Int      @map("sku_item_count")
-  totalValue     Decimal  @map("total_value") @db.Decimal(14, 2)
-  taxTotal       Decimal  @default(0) @map("tax_total") @db.Decimal(14, 2)
-  status         String
-  approver       String?
-  customsEntryNo String?  @map("customs_entry_no")
-  createdById    Int?     @map("created_by_id")
+  totalValue      Decimal     @map("total_value") @db.Decimal(14, 2)
+  taxTotal        Decimal     @default(0) @map("tax_total") @db.Decimal(14, 2)
+  logisticsStatus String      @map("logistics_status")
+  status          OrderStatus @default(APPROVED) @map("status")
+  approvedById    Int?        @map("approved_by_id")
+  approvedAt      DateTime?   @map("approved_at")
+  rejectionReason String?     @map("rejection_reason")
+  customsEntryNo  String?     @map("customs_entry_no")
+  createdById     Int?        @map("created_by_id")
 
-  supplier  Supplier          @relation(fields: [supplierId], references: [supplierId])
-  items     ImportOrderItem[]
-  createdBy User?             @relation("CreatedImportOrders", fields: [createdById], references: [id], onDelete: SetNull)
+  supplier   Supplier          @relation(fields: [supplierId], references: [supplierId])
+  items      ImportOrderItem[]
+  createdBy  User?             @relation("CreatedImportOrders", fields: [createdById], references: [id], onDelete: SetNull)
+  approvedBy User?             @relation("ApprovedImportOrders", fields: [approvedById], references: [id], onDelete: SetNull)
 
   @@map("import_orders")
 }
@@ -159,6 +163,14 @@ enum CustomerLicenseStatus {
   REVOKED
   SUSPENDED
   PENDING
+}
+
+enum OrderStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  CANCELLED
 }
 
 model CustomerLicense {
@@ -213,12 +225,14 @@ model SalesOrder {
   customerId       Int     @map("customer_id")
   netValue         Decimal @map("net_value") @db.Decimal(14, 2)
   taxTotal         Decimal @default(0) @map("tax_total") @db.Decimal(14, 2)
-  deliveryStatus   String  @map("delivery_status")
-  invoiceNo        String  @map("invoice_no")
-  approver         String?
-  createdById      Int?    @map("created_by_id")
-  requiresApproval Boolean @default(false) @map("requires_approval")
-  updatedById      Int?    @map("updated_by_id")
+  deliveryStatus  String      @map("delivery_status")
+  invoiceNo       String      @map("invoice_no")
+  status          OrderStatus @default(APPROVED) @map("status")
+  approvedById    Int?        @map("approved_by_id")
+  approvedAt      DateTime?   @map("approved_at")
+  rejectionReason String?     @map("rejection_reason")
+  createdById     Int?        @map("created_by_id")
+  updatedById     Int?        @map("updated_by_id")
 
   customerLicenseId     Int?      @map("customer_license_id")
   licenseNumberSnapshot String?   @map("license_number_snapshot")
@@ -230,6 +244,7 @@ model SalesOrder {
   items           SalesOrderItem[]
   createdBy       User?            @relation("CreatedSalesOrders", fields: [createdById], references: [id], onDelete: SetNull)
   updatedBy       User?            @relation("UpdatedSalesOrders", fields: [updatedById], references: [id], onDelete: SetNull)
+  approvedBy      User?            @relation("ApprovedSalesOrders", fields: [approvedById], references: [id], onDelete: SetNull)
 
   @@map("sales_orders")
 }
@@ -298,9 +313,11 @@ model User {
   refreshTokens RefreshToken[]
   userRoles           UserRole[]
   auditLogs           AuditLog[]
-  createdImportOrders ImportOrder[] @relation("CreatedImportOrders")
-  createdSalesOrders  SalesOrder[]  @relation("CreatedSalesOrders")
-  updatedSalesOrders  SalesOrder[]  @relation("UpdatedSalesOrders")
+  createdImportOrders  ImportOrder[] @relation("CreatedImportOrders")
+  createdSalesOrders   SalesOrder[]  @relation("CreatedSalesOrders")
+  updatedSalesOrders   SalesOrder[]  @relation("UpdatedSalesOrders")
+  approvedImportOrders ImportOrder[] @relation("ApprovedImportOrders")
+  approvedSalesOrders  SalesOrder[]  @relation("ApprovedSalesOrders")
 
   @@map("users")
 }
